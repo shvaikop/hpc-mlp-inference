@@ -1,0 +1,17 @@
+# Ignore Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# Ignore cifar10_embedding_mlp directory
+cifar10_embedding_mlp/
+
+# Ignore data directory
+data/
+
+# Ignore any .bin files
+*.bin
+
+# Ignore any .txt files
+*.txt
+
+# Ignore executable files
+mlp_infer
