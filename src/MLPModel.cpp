@@ -1,4 +1,5 @@
 #include "MLPModel.hpp"
+#include "FlatMatrix.hpp"
 #include "json.hpp"
 
 #include <algorithm>
@@ -124,26 +125,19 @@ std::vector<float> MLPModel::linear_forward(
         throw std::runtime_error("Layer input dimension mismatch.");
     }
 
-    std::vector<float> output(batch_size * layer.out_features, 0.0f);
+    FlatMatrix X(batch_size, input_dim, input);
+    FlatMatrix W(layer.out_features, layer.in_features, layer.weight);
 
-    for (std::size_t b = 0; b < batch_size; ++b) {
-        const float* x = input.data() + b * input_dim;
-        float* y = output.data() + b * layer.out_features;
+    FlatMatrix Y(batch_size, layer.out_features);
+    X.multiply_transposed_rhs(W, Y);
 
-        for (std::size_t o = 0; o < layer.out_features; ++o) {
-            const float* w_row = layer.weight.data() + o * layer.in_features;
-            float sum = layer.bias[o];
+    Y.add_row_vector(layer.bias);
 
-            for (std::size_t i = 0; i < layer.in_features; ++i) {
-                sum += x[i] * w_row[i];
-            }
-
-            if (apply_relu && sum < 0.0f) {
-                sum = 0.0f;
-            }
-            y[o] = sum;
-        }
+    if (apply_relu) {
+        Y.transform([](float x) {
+            return std::max(0.0f, x);
+        });
     }
 
-    return output;
+    return Y.take_data();
 }
