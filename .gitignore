@@ -10,8 +10,14 @@ data/
 # Ignore any .bin files
 *.bin
 
-# Ignore any .txt files
+# Ignore all .txt files
 *.txt
+
+# Except for CMakeLists.txt
+!CMakeLists.txt
 
 # Ignore executable files
 mlp_infer
+
+# Ignore build directory
+build/

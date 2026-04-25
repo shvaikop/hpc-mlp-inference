@@ -54,3 +54,34 @@ To run:
 ```
 ./mlp_infer cifar10_embedding_mlp/export   cifar10_embedding_mlp/export/test_input_embeddings_all.bin   cpp_output_logits_all.bin   cpp_output_preds_all.bin
 ```
+
+To compile using `CMakeLists.txt`
+
+```
+mkdir build && cd build
+cmake ..
+make
+
+./mlp_infer ../cifar10_embedding_mlp/export   ../cifar10_embedding_mlp/export/test_input_all/test_input_embeddings_all.bin   ../cpp_output_logits_all.bin   ../cpp_output_preds_all.bin
+```
+
+Compiling on Dardel:
+
+```
+shvaiko@login1:~/Public/HPC_PROJECT_MLP_INFERENCE/build> module swap PrgEnv-cray PrgEnv-gnu
+```
+
+```
+shvaiko@login1:~/Public/HPC_PROJECT_MLP_INFERENCE/build> g++ --version
+g++ (SUSE Linux) 13.2.1 20240206 [revision 67ac78caf31f7cb3202177e6428a46d829b70f23]
+Copyright (C) 2023 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+shvaiko@login1:~/Public/HPC_PROJECT_MLP_INFERENCE/build>
+```
+
+```
+shvaiko@login1:~/Public/HPC_PROJECT_MLP_INFERENCE/build> CXX=g++ cmake ..
+shvaiko@login1:~/Public/HPC_PROJECT_MLP_INFERENCE/build> make
+```
