@@ -1,3 +1,4 @@
+#include "MatrixConcepts.hpp"
 #include "MLPModel.hpp"
 #include "FlatMatrix.hpp"
 #include "json.hpp"
@@ -93,7 +94,7 @@ std::vector<float> MLPModel::infer_batch(const std::vector<float>& input, std::s
 
     for (std::size_t layer_idx = 0; layer_idx < layers_.size(); ++layer_idx) {
         const bool apply_relu = (layer_idx + 1 != layers_.size());
-        activations = linear_forward(activations, batch_size, current_dim, layers_[layer_idx], apply_relu);
+        activations = linear_forward<FlatMatrix<float>>(activations, batch_size, current_dim, layers_[layer_idx], apply_relu);
         current_dim = layers_[layer_idx].out_features;
     }
 
@@ -112,32 +113,4 @@ std::vector<std::int64_t> MLPModel::predict_batch(const std::vector<float>& logi
         preds[b] = static_cast<std::int64_t>(std::distance(row, max_it));
     }
     return preds;
-}
-
-std::vector<float> MLPModel::linear_forward(
-    const std::vector<float>& input,
-    std::size_t batch_size,
-    std::size_t input_dim,
-    const LinearLayer& layer,
-    bool apply_relu
-) {
-    if (input_dim != layer.in_features) {
-        throw std::runtime_error("Layer input dimension mismatch.");
-    }
-
-    FlatMatrix X(batch_size, input_dim, input);
-    FlatMatrix W(layer.out_features, layer.in_features, layer.weight);
-
-    FlatMatrix Y(batch_size, layer.out_features);
-    X.multiply_transposed_rhs(W, Y);
-
-    Y.add_row_vector(layer.bias);
-
-    if (apply_relu) {
-        Y.transform([](float x) {
-            return std::max(0.0f, x);
-        });
-    }
-
-    return Y.take_data();
 }

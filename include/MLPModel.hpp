@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "MatrixConcepts.hpp"
+
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -41,6 +43,8 @@ private:
     template <typename T>
     static std::vector<T> read_binary_file(const std::filesystem::path& path);
 
+    template <typename MatrixType>
+        requires IMatrix<MatrixType, float>
     static std::vector<float> linear_forward(
         const std::vector<float>& input,
         std::size_t batch_size,
@@ -75,6 +79,34 @@ std::vector<T> MLPModel::read_binary_file(const std::filesystem::path& path) {
         throw std::runtime_error("Failed to read binary file: " + path.string());
     }
     return data;
+}
+
+template <typename MatrixType>
+    requires IMatrix<MatrixType, float>
+std::vector<float> MLPModel::linear_forward(
+    const std::vector<float>& input,
+    std::size_t batch_size,
+    std::size_t input_dim,
+    const LinearLayer& layer,
+    bool apply_relu
+) {
+    if (input_dim != layer.in_features) {
+        throw std::runtime_error("Layer input dimension mismatch.");
+    }
+
+    MatrixType X(batch_size, input_dim, input);
+    MatrixType W(layer.out_features, layer.in_features, layer.weight);
+    MatrixType Y(batch_size, layer.out_features);
+
+    X.multiply_transposed_rhs(W, Y);
+    Y.add_row_vector(layer.bias);
+
+    // Apply ReLU
+    if (apply_relu) {
+        Y.transform([](float x) { return std::max(0.0f, x); });
+    }
+
+    return Y.take_data();
 }
 
 #endif // MLP_MODEL_HPP
