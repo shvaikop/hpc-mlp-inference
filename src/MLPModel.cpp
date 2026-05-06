@@ -19,6 +19,7 @@ void MLPModel::load_from_export_dir(const fs::path& export_dir) {
     json meta;
     meta_file >> meta;
 
+    // Validate required metadata fields
     const std::string format = meta.at("format").get<std::string>();
     const std::string dtype = meta.at("dtype").get<std::string>();
     if (format != "mlp_classifier_v1") {
@@ -32,6 +33,7 @@ void MLPModel::load_from_export_dir(const fs::path& export_dir) {
     num_classes_ = meta.at("num_classes").get<std::size_t>();
     class_names_ = meta.at("class_names").get<std::vector<std::string>>();
 
+    // Loop through the layers and load the wheights
     const auto& layers_json = meta.at("layers");
     layers_.clear();
     layers_.reserve(layers_json.size());
