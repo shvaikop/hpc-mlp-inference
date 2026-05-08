@@ -24,3 +24,17 @@ add_executable(mlp_infer
 
 # Tell the compiler where to find your header files
 target_include_directories(mlp_infer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+if(APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    execute_process(
+        COMMAND brew --prefix libomp
+        OUTPUT_VARIABLE LIBOMP_PREFIX
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp -I${LIBOMP_PREFIX}/include")
+    set(OpenMP_CXX_LIB_NAMES "omp")
+    set(OpenMP_omp_LIBRARY "${LIBOMP_PREFIX}/lib/libomp.dylib")
+endif()
+
+find_package(OpenMP REQUIRED)
+target_link_libraries(mlp_infer PRIVATE OpenMP::OpenMP_CXX)
