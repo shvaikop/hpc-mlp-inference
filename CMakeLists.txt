@@ -24,8 +24,66 @@ add_executable(mlp_infer
     src/MLPModel.cpp
 )
 
-add_executable(flat_matrix_benchmark
+add_compile_options(-O3)
+
+add_executable(flat_matrix_benchmark_avx2
         src/flat_matrix_benchmark.cpp
+)
+
+target_compile_options(flat_matrix_benchmark_avx2 PRIVATE
+#        -march=native
+        -mavx2
+        -mfma
+        -ffast-math
+#        -fopt-info-vec-optimized
+#        -fopt-info-vec-missed
+)
+
+add_executable(flat_matrix_benchmark_native
+        src/flat_matrix_benchmark.cpp
+)
+
+target_compile_options(flat_matrix_benchmark_native PRIVATE
+        -march=native
+        -mfma
+        -ffast-math
+#        -fopt-info-vec-optimized
+#        -fopt-info-vec-missed
+)
+
+add_executable(flat_matrix_benchmark_dot4
+        src/flat_matrix_benchmark.cpp
+)
+
+target_compile_options(flat_matrix_benchmark_dot4 PRIVATE
+        -O3
+        -mavx2
+        -mfma
+        -ffast-math
+        -fopt-info-vec-optimized
+        -fopt-info-vec-missed
+)
+
+target_compile_definitions(flat_matrix_benchmark_dot4 PRIVATE
+        FLATMATRIX_USE_DOT4=1
+)
+
+add_executable(flat_matrix_benchmark_dot4_openmp_simd
+        src/flat_matrix_benchmark.cpp
+)
+
+target_compile_options(flat_matrix_benchmark_dot4_openmp_simd PRIVATE
+        -O3
+        -mavx2
+        -mfma
+        -ffast-math
+        -fopenmp-simd
+        -fopt-info-vec-optimized
+        -fopt-info-vec-missed
+)
+
+target_compile_definitions(flat_matrix_benchmark_dot4_openmp_simd PRIVATE
+        FLATMATRIX_USE_DOT4=1
 )
 
 # Tell the compiler where to find your header files

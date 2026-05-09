@@ -1,0 +1,80 @@
+(base) pshvaiko@ps-tp:~/Documents/HPC_PROJECT_MLP_INFERENCE/build$ make VERBOSE=1 2>&1 | grep FlatMatrix
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:28:11: missed: not vectorized: vectorization is not profitable.
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:28:11: missed: not vectorized: vectorization is not profitable.
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:28:11: missed: not vectorized: vectorization is not profitable.
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:28:11: missed: not vectorized: vectorization is not profitable.
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:30:13: missed: statement clobbers memory: _302 = __cxa_allocate_exception (16);
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:30:13: missed: not vectorized: statement can throw an exception: std::runtime_error::runtime_error (_302, "Data size does not match matrix dimensions.");
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:30:13: missed: statement clobbers memory: __cxa_free_exception (_302);
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:30:13: missed: not vectorized: statement can throw an exception: __cxa_throw (_302, &_ZTISt13runtime_error, __dt_comp );
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:50:9: missed: couldn't vectorize loop
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:50:9: missed: not vectorized: multiple nested loops.
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:58:35: missed: couldn't vectorize loop
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:58:35: missed: not vectorized: multiple nested loops.
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:62:39: missed: couldn't vectorize loop
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:62:39: missed: not vectorized: control flow in loop.
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:66:43: optimized: loop vectorized using 32 byte vectors
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:66:43: optimized: loop vectorized using 16 byte vectors
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:50:9: missed: couldn't vectorize loop
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:50:9: missed: not vectorized: multiple nested loops.
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:58:35: missed: couldn't vectorize loop
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:58:35: missed: not vectorized: multiple nested loops.
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:62:39: missed: couldn't vectorize loop
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:62:39: missed: not vectorized: control flow in loop.
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:66:43: optimized: loop vectorized using 32 byte vectors
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:66:43: optimized: loop vectorized using 16 byte vectors
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:55:13: missed: statement clobbers memory: _132 = __cxa_allocate_exception (16);
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:55:13: missed: not vectorized: statement can throw an exception: std::runtime_error::runtime_error (_132, "Output matrix has incorrect dimensions.");
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:55:13: missed: statement clobbers memory: __cxa_free_exception (_132);
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:55:13: missed: not vectorized: statement can throw an exception: __cxa_throw (_132, &_ZTISt13runtime_error, __dt_comp );
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:51:13: missed: statement clobbers memory: _127 = __cxa_allocate_exception (16);
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:51:13: missed: not vectorized: statement can throw an exception: std::runtime_error::runtime_error (_127, "Dimension mismatch.");
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:51:13: missed: statement clobbers memory: __cxa_free_exception (_127);
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:51:13: missed: not vectorized: statement can throw an exception: __cxa_throw (_127, &_ZTISt13runtime_error, __dt_comp );
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:55:13: missed: statement clobbers memory: _96 = __cxa_allocate_exception (16);
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:55:13: missed: not vectorized: statement can throw an exception: std::runtime_error::runtime_error (_96, "Output matrix has incorrect dimensions.");
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:55:13: missed: statement clobbers memory: __cxa_free_exception (_96);
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:55:13: missed: not vectorized: statement can throw an exception: __cxa_throw (_96, &_ZTISt13runtime_error, __dt_comp );
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:51:13: missed: statement clobbers memory: _91 = __cxa_allocate_exception (16);
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:51:13: missed: not vectorized: statement can throw an exception: std::runtime_error::runtime_error (_91, "Dimension mismatch.");
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:51:13: missed: statement clobbers memory: __cxa_free_exception (_91);
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:51:13: missed: not vectorized: statement can throw an exception: __cxa_throw (_91, &_ZTISt13runtime_error, __dt_comp );
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:50:9: missed: couldn't vectorize loop
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:50:9: missed: not vectorized: multiple nested loops.
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:58:35: missed: couldn't vectorize loop
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:58:35: missed: not vectorized: multiple nested loops.
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:62:39: missed: couldn't vectorize loop
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:62:39: missed: not vectorized: control flow in loop.
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:66:43: optimized: loop vectorized using 32 byte vectors
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:66:43: optimized: loop vectorized using 16 byte vectors
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:50:9: missed: couldn't vectorize loop
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:50:9: missed: not vectorized: multiple nested loops.
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:58:35: missed: couldn't vectorize loop
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:58:35: missed: not vectorized: multiple nested loops.
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:62:39: missed: couldn't vectorize loop
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:62:39: missed: not vectorized: control flow in loop.
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:66:43: optimized: loop vectorized using 32 byte vectors
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:66:43: optimized: loop vectorized using 16 byte vectors
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:55:13: missed: statement clobbers memory: _130 = __cxa_allocate_exception (16);
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:55:13: missed: not vectorized: statement can throw an exception: std::runtime_error::runtime_error (_130, "Output matrix has incorrect dimensions.");
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:55:13: missed: statement clobbers memory: __cxa_free_exception (_130);
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:55:13: missed: not vectorized: statement can throw an exception: __cxa_throw (_130, &_ZTISt13runtime_error, __dt_comp );
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:51:13: missed: statement clobbers memory: _125 = __cxa_allocate_exception (16);
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:51:13: missed: not vectorized: statement can throw an exception: std::runtime_error::runtime_error (_125, "Dimension mismatch.");
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:51:13: missed: statement clobbers memory: __cxa_free_exception (_125);
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:51:13: missed: not vectorized: statement can throw an exception: __cxa_throw (_125, &_ZTISt13runtime_error, __dt_comp );
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:55:13: missed: statement clobbers memory: _94 = __cxa_allocate_exception (16);
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:55:13: missed: not vectorized: statement can throw an exception: std::runtime_error::runtime_error (_94, "Output matrix has incorrect dimensions.");
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:55:13: missed: statement clobbers memory: __cxa_free_exception (_94);
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:55:13: missed: not vectorized: statement can throw an exception: __cxa_throw (_94, &_ZTISt13runtime_error, __dt_comp );
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:51:13: missed: statement clobbers memory: _89 = __cxa_allocate_exception (16);
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:51:13: missed: not vectorized: statement can throw an exception: std::runtime_error::runtime_error (_89, "Dimension mismatch.");
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:51:13: missed: statement clobbers memory: __cxa_free_exception (_89);
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:51:13: missed: not vectorized: statement can throw an exception: __cxa_throw (_89, &_ZTISt13runtime_error, __dt_comp );
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:21:7: missed: splitting region at dominance boundary bb15
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:21:7: missed: splitting region at dominance boundary bb15
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:21:7: missed: splitting region at dominance boundary bb15
+/home/pshvaiko/Documents/HPC_PROJECT_MLP_INFERENCE/include/FlatMatrix.hpp:21:7: missed: splitting region at dominance boundary bb15
+/usr/include/c++/13/ostream:667:18: missed: statement clobbers memory: std::__ostream_insert<char, std::char_traits<char> > (&cout, "Starting FlatMatrix Benchmarks...\n", 34);
+/usr/include/c++/13/ostream:667:18: missed: statement clobbers memory: std::__ostream_insert<char, std::char_traits<char> > (&cout, "Note: All should have similar runtimes because FlatMatrix is a Dense storage format.\n", 85);
+(base) pshvaiko@ps-tp:~/Documents/HPC_PROJECT_MLP_INFERENCE/build$

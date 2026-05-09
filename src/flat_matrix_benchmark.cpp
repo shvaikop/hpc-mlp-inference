@@ -32,11 +32,13 @@ namespace MatrixGenerator {
 }
 
 // Helper to run the actual timer
-void run_timer(const std::string& label, const FlatMatrix<float>& A, const FlatMatrix<float>& B, int iterations = 10) {
+void run_timer(const std::string& label, const FlatMatrix<float>& A, const FlatMatrix<float>& B, int iterations = 20, size_t warm_up_iters = 5) {
     FlatMatrix<float> C(A.rows(), B.rows()); // Output is M x N
 
     // Warm-up
-    A.multiply_transposed_rhs(B, C);
+    for (size_t i = 0; i < warm_up_iters; ++i) {
+        A.multiply_transposed_rhs(B, C);
+    }
 
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < iterations; ++i) {
@@ -84,10 +86,10 @@ int main() {
     std::cout << "Note: All should have similar runtimes because FlatMatrix is a Dense storage format.\n";
     std::cout << "----------------------------------------------------------\n";
 
-    benchmark_dense_by_dense(M, K, N);
     benchmark_dense_by_sparse(M, K, N);
     benchmark_sparse_by_dense(M, K, N);
     benchmark_sparse_by_sparse(M, K, N);
+    benchmark_dense_by_dense(M, K, N);
 
     return 0;
 }

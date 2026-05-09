@@ -45,6 +45,7 @@ public:
         return data_[r * cols_ + c];
     }
 
+    __attribute__((noinline))
     void multiply_transposed_rhs(const FlatMatrix& rhs, FlatMatrix& out) const {
         // std::cout << "Multiplying matrix " << rows_ << " x " << cols_ << " by matrix " << rhs.cols() << " x " << rhs.rows() << "\n";
         if (cols_ != rhs.cols_) {
@@ -54,6 +55,25 @@ public:
         if (out.rows() != rows_ || out.cols() != rhs.rows()) {
             throw std::runtime_error("Output matrix has incorrect dimensions.");
         }
+
+        // Required before passing pointers as __restrict__.
+#if defined(FLATMATRIX_USE_DOT4)
+        if (&out == this || &out == &rhs) {
+            throw std::runtime_error("Output matrix must not alias input matrices.");
+        }
+
+        if constexpr (std::is_same_v<T, float>) {
+            multiply_transposed_rhs_float_dot4_kernel(
+                data_.data(),
+                rhs.data_.data(),
+                out.data_.data(),
+                rows_,
+                rhs.rows_,
+                cols_
+            );
+            return;
+        }
+#endif
 
         for (std::size_t i = 0; i < rows_; ++i) {
             const T* x = &data_[i * cols_];
@@ -170,6 +190,63 @@ private:
     std::size_t cols_ = 0;
     std::vector<T> data_;   // row-major storage
 
+    __attribute__((noinline))
+    static void multiply_transposed_rhs_float_dot4_kernel(
+        const float* __restrict__ lhs,
+        const float* __restrict__ rhs,
+        float* __restrict__ out,
+        std::size_t M,
+        std::size_t N,
+        std::size_t K
+    ) {
+        for (std::size_t i = 0; i < M; ++i) {
+            const float* __restrict__ x = lhs + i * K;
+            float* __restrict__ y = out + i * N;
+
+            std::size_t j = 0;
+
+            for (; j + 4 <= N; j += 4) {
+                const float* __restrict__ w0 = rhs + (j + 0) * K;
+                const float* __restrict__ w1 = rhs + (j + 1) * K;
+                const float* __restrict__ w2 = rhs + (j + 2) * K;
+                const float* __restrict__ w3 = rhs + (j + 3) * K;
+
+                float s0 = 0.0f;
+                float s1 = 0.0f;
+                float s2 = 0.0f;
+                float s3 = 0.0f;
+
+                #pragma omp simd reduction(+:s0,s1,s2,s3)
+                for (std::size_t k = 0; k < K; ++k) {
+                    const float xv = x[k];
+
+                    s0 += xv * w0[k];
+                    s1 += xv * w1[k];
+                    s2 += xv * w2[k];
+                    s3 += xv * w3[k];
+                }
+
+                y[j + 0] = s0;
+                y[j + 1] = s1;
+                y[j + 2] = s2;
+                y[j + 3] = s3;
+            }
+
+            // Remainder columns.
+            for (; j < N; ++j) {
+                const float* __restrict__ w = rhs + j * K;
+
+                float sum = 0.0f;
+
+                #pragma omp simd reduction(+:sum)
+                for (std::size_t k = 0; k < K; ++k) {
+                    sum += x[k] * w[k];
+                }
+
+                y[j] = sum;
+            }
+        }
+    }
 };
 
 
