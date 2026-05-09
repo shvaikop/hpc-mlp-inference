@@ -64,7 +64,10 @@ make
 
 ./mlp_infer ../cifar10_embedding_mlp/export   ../cifar10_embedding_mlp/export/test_input_all/test_input_embeddings_all.bin   ../cpp_output_logits_all.bin   ../cpp_output_preds_all.bin
 ```
-
+Running with MPI
+```
+mpirun -n 4 ./mlp_infer --export-dir ../cifar10_embedding_mlp/export --input ../cifar10_embedding_mlp/export/test_input_embeddings_all.bin --logits-out ../cpp_output_logits_all.bin --preds-out ../cpp_output_preds_all.bin --batch-size 64
+```
 Compiling on Dardel:
 
 ```
