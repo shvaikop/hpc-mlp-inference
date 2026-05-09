@@ -24,3 +24,7 @@ add_executable(mlp_infer
 
 # Tell the compiler where to find your header files
 target_include_directories(mlp_infer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+# Find and link MPI
+find_package(MPI REQUIRED)        
+target_link_libraries(mlp_infer PRIVATE MPI::MPI_CXX)
