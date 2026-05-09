@@ -1,13 +1,14 @@
 #include "MLPModel.hpp"
 #include "CLI11.hpp"
 
+#include <optional>
 #include <algorithm>
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
 #include <chrono>
 #include <numeric>
-#include <cmath>  
+#include <cmath>
 
 namespace fs = std::filesystem;
 
@@ -57,11 +58,17 @@ static void write_int64_file(const fs::path &path, const std::vector<std::int64_
 }
 
 struct Config {
+    static constexpr std::string_view DEFAULT_LOGITS_OUT = "cpp_output_logits.bin";
+    static constexpr std::string_view DEFAULT_PREDS_OUT = "cpp_output_preds.bin";
+    static constexpr std::size_t DEFAULT_BATCH_SIZE = 128;
+    static constexpr std::optional<std::size_t> MAX_NUM_BATCHES_PLACEHOLDER = std::nullopt;
+
     std::string export_dir;
     std::string input_path;
-    std::string logits_out = "cpp_output_logits.bin";
-    std::string preds_out = "cpp_output_preds.bin";
-    std::size_t batch_size = 128;
+    std::string logits_out{DEFAULT_LOGITS_OUT};
+    std::string preds_out{DEFAULT_PREDS_OUT};
+    std::size_t batch_size = DEFAULT_BATCH_SIZE;
+    std::optional<std::size_t> num_batches = MAX_NUM_BATCHES_PLACEHOLDER;
 };
 
 int main(int argc, char **argv)
@@ -72,9 +79,10 @@ int main(int argc, char **argv)
     Config cfg;
     app.add_option("--export-dir", cfg.export_dir,  "Path to model export directory")->required();
     app.add_option("--input",      cfg.input_path,  "Path to input embeddings .bin file")->required();
-    app.add_option("--logits-out", cfg.logits_out,  "Path to output logits .bin file");
-    app.add_option("--preds-out",  cfg.preds_out,   "Path to output predictions .bin file");
-    app.add_option("--batch-size", cfg.batch_size,  "Batch size for inference");
+    app.add_option("--logits-out", cfg.logits_out,  "Path to output logits .bin file")->capture_default_str();
+    app.add_option("--preds-out",  cfg.preds_out,   "Path to output predictions .bin file")->capture_default_str();
+    app.add_option("--batch-size", cfg.batch_size,  "Batch size for inference")->capture_default_str();
+    app.add_option("--num-batches", cfg.num_batches, "Number of batches to run")->default_str("All samples from dataset");
     
     CLI11_PARSE(app, argc, argv);
 
@@ -92,29 +100,24 @@ int main(int argc, char **argv)
                 "Input file size is not divisible by input_dim=" + std::to_string(model.input_dim()));
         }
 
-        // Calculate the number of samples and batches
-        const std::size_t num_samples = input.size() / model.input_dim();
-        const std::size_t num_batches = num_samples / cfg.batch_size;
+        // Calculate the number of samples and batch
+        // Lambda is used so that `num_samples` can be marked const and its more readable than with ternary operator
+        const std::size_t num_samples = [&]() {
+            if (!cfg.num_batches.has_value()) {
+                const std::size_t total_samples = input.size() / model.input_dim();
+                cfg.num_batches = total_samples / cfg.batch_size;
+                return total_samples;
+            }
+            return cfg.num_batches.value() * cfg.batch_size;
+        }();
                                                    
         std::cout << "================================================================================\n";                                                                  
         std::cout << "  Input dim    : " << model.input_dim() << "\n";
         std::cout << "  Num classes  : " << model.num_classes() << "\n";                  
         std::cout << "  Batch size   : " << cfg.batch_size << "\n";
         std::cout << "  Total samples: " << num_samples << "\n";                          
-        std::cout << "  Total batches: " << num_batches << "\n";
+        std::cout << "  Total batches: " << cfg.num_batches.value() << "\n";
         std::cout << "================================================================================\n";
-            
-        // // Calculate the time
-        // const auto t_start = std::chrono::high_resolution_clock::now();   
-        // // Run inference
-        // const std::vector<float> logits = model.infer_batch(input, cfg.batch_size);
-
-        // const auto t_end = std::chrono::high_resolution_clock::now();                           
-        // const double inference_ms = std::chrono::duration<double, std::milli>(t_end - t_start).count();
-        // std::cout << "================================================================================\n";
-        // std::cout << "Inference completed in " << inference_ms << " ms(Batch Size: " << cfg.batch_size << ")\n";
-        // std::cout << "Throughput: " << (cfg.batch_size / (inference_ms / 1000.0)) << " samples/sec\n";
-        // std::cout << "================================================================================\n";
         
         std::vector<double> batch_times;                                                  
         const std::size_t stride = cfg.batch_size * model.input_dim();
@@ -123,7 +126,7 @@ int main(int argc, char **argv)
         std::vector<std::int64_t> all_preds;
 
         // Iterate over batches and run inference
-        for (std::size_t i = 0; i < num_batches; ++i) {
+        for (std::size_t i = 0; i < cfg.num_batches.value(); ++i) {
             // Create batch input                                                   
             const float* batch_start = input.data() + i * stride;                         
             const std::vector<float> batch_input(batch_start, batch_start + stride);
@@ -138,19 +141,19 @@ int main(int argc, char **argv)
             const std::vector<std::int64_t> preds = model.predict_batch(logits, cfg.batch_size);
             all_logits.insert(all_logits.end(), logits.begin(), logits.end());
             all_preds.insert(all_preds.end(), preds.begin(), preds.end());
-            std::cout << "Processed batch " << (i + 1) << "/" << num_batches << " in " << batch_times.back() << " ms\n";
+            std::cout << "Processed batch " << (i + 1) << "/" << cfg.num_batches.value() << " in " << batch_times.back() << " ms\n";
         }
 
         // average latency
         const double mean_ms = std::accumulate(batch_times.begin(), batch_times.end(),    
-        0.0) / num_batches;                                                               
+        0.0) / cfg.num_batches.value();
                                                                                             
         // standard deviation                                                                       
         double variance = 0.0;
         for (const double t : batch_times) {
             variance += (t - mean_ms) * (t - mean_ms);
         }                                                                                 
-        const double std_ms = std::sqrt(variance / num_batches);
+        const double std_ms = std::sqrt(variance / cfg.num_batches.value());
                                                                                             
         const double throughput = cfg.batch_size / (mean_ms / 1000.0);                    
         
