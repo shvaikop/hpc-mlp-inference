@@ -63,7 +63,8 @@ public:
         }
 
         if constexpr (std::is_same_v<T, float>) {
-            multiply_transposed_rhs_float_dot4_kernel(
+            // multiply_transposed_rhs_float_dot4_kernel(
+            multiply_transposed_rhs_float_dot4_kernel_4_4(
                 data_.data(),
                 rhs.data_.data(),
                 out.data_.data(),
@@ -191,7 +192,7 @@ private:
     std::vector<T> data_;   // row-major storage
 
     __attribute__((noinline))
-    static void multiply_transposed_rhs_float_dot4_kernel(
+    static void multiply_transposed_rhs_float_dot4_kernel_2_4(
         const float* __restrict__ lhs,
         const float* __restrict__ rhs,
         float* __restrict__ out,
@@ -199,7 +200,303 @@ private:
         std::size_t N,
         std::size_t K
     ) {
-        for (std::size_t i = 0; i < M; ++i) {
+        std::size_t i = 0;
+
+        // Main 2x4 kernel:
+        // computes 2 rows of out and 4 columns of out at once.
+        for (; i + 2 <= M; i += 2) {
+            const float* __restrict__ x0 = lhs + (i + 0) * K;
+            const float* __restrict__ x1 = lhs + (i + 1) * K;
+
+            float* __restrict__ y0 = out + (i + 0) * N;
+            float* __restrict__ y1 = out + (i + 1) * N;
+
+            std::size_t j = 0;
+
+            for (; j + 4 <= N; j += 4) {
+                const float* __restrict__ w0 = rhs + (j + 0) * K;
+                const float* __restrict__ w1 = rhs + (j + 1) * K;
+                const float* __restrict__ w2 = rhs + (j + 2) * K;
+                const float* __restrict__ w3 = rhs + (j + 3) * K;
+
+                float s00 = 0.0f;
+                float s01 = 0.0f;
+                float s02 = 0.0f;
+                float s03 = 0.0f;
+
+                float s10 = 0.0f;
+                float s11 = 0.0f;
+                float s12 = 0.0f;
+                float s13 = 0.0f;
+
+                for (std::size_t k = 0; k < K; ++k) {
+                    const float a0 = x0[k];
+                    const float a1 = x1[k];
+
+                    const float b0 = w0[k];
+                    const float b1 = w1[k];
+                    const float b2 = w2[k];
+                    const float b3 = w3[k];
+
+                    s00 += a0 * b0;
+                    s01 += a0 * b1;
+                    s02 += a0 * b2;
+                    s03 += a0 * b3;
+
+                    s10 += a1 * b0;
+                    s11 += a1 * b1;
+                    s12 += a1 * b2;
+                    s13 += a1 * b3;
+                }
+
+                y0[j + 0] = s00;
+                y0[j + 1] = s01;
+                y0[j + 2] = s02;
+                y0[j + 3] = s03;
+
+                y1[j + 0] = s10;
+                y1[j + 1] = s11;
+                y1[j + 2] = s12;
+                y1[j + 3] = s13;
+            }
+
+            // Remainder columns for the 2-row block.
+            for (; j < N; ++j) {
+                const float* __restrict__ w = rhs + j * K;
+
+                float s0 = 0.0f;
+                float s1 = 0.0f;
+
+                for (std::size_t k = 0; k < K; ++k) {
+                    const float b = w[k];
+
+                    s0 += x0[k] * b;
+                    s1 += x1[k] * b;
+                }
+
+                y0[j] = s0;
+                y1[j] = s1;
+            }
+        }
+
+        // Remainder row if M is odd.
+        for (; i < M; ++i) {
+            const float* __restrict__ x = lhs + i * K;
+            float* __restrict__ y = out + i * N;
+
+            std::size_t j = 0;
+
+            // Original 1x4 dot4 kernel for the last row.
+            for (; j + 4 <= N; j += 4) {
+                const float* __restrict__ w0 = rhs + (j + 0) * K;
+                const float* __restrict__ w1 = rhs + (j + 1) * K;
+                const float* __restrict__ w2 = rhs + (j + 2) * K;
+                const float* __restrict__ w3 = rhs + (j + 3) * K;
+
+                float s0 = 0.0f;
+                float s1 = 0.0f;
+                float s2 = 0.0f;
+                float s3 = 0.0f;
+
+                for (std::size_t k = 0; k < K; ++k) {
+                    const float a = x[k];
+
+                    s0 += a * w0[k];
+                    s1 += a * w1[k];
+                    s2 += a * w2[k];
+                    s3 += a * w3[k];
+                }
+
+                y[j + 0] = s0;
+                y[j + 1] = s1;
+                y[j + 2] = s2;
+                y[j + 3] = s3;
+            }
+
+            // Remainder columns for the last row.
+            for (; j < N; ++j) {
+                const float* __restrict__ w = rhs + j * K;
+
+                float sum = 0.0f;
+
+                for (std::size_t k = 0; k < K; ++k) {
+                    sum += x[k] * w[k];
+                }
+
+                y[j] = sum;
+            }
+        }
+    }
+
+    __attribute__((noinline))
+    static void multiply_transposed_rhs_float_dot4_kernel_3_4(
+        const float* __restrict__ lhs,
+        const float* __restrict__ rhs,
+        float* __restrict__ out,
+        std::size_t M,
+        std::size_t N,
+        std::size_t K
+    ) {
+        std::size_t i = 0;
+
+        // Main 3x4 kernel:
+        // computes 3 rows of out and 4 columns of out at once.
+        for (; i + 3 <= M; i += 3) {
+            const float* __restrict__ x0 = lhs + (i + 0) * K;
+            const float* __restrict__ x1 = lhs + (i + 1) * K;
+            const float* __restrict__ x2 = lhs + (i + 2) * K;
+
+            float* __restrict__ y0 = out + (i + 0) * N;
+            float* __restrict__ y1 = out + (i + 1) * N;
+            float* __restrict__ y2 = out + (i + 2) * N;
+
+            std::size_t j = 0;
+
+            for (; j + 4 <= N; j += 4) {
+                const float* __restrict__ w0 = rhs + (j + 0) * K;
+                const float* __restrict__ w1 = rhs + (j + 1) * K;
+                const float* __restrict__ w2 = rhs + (j + 2) * K;
+                const float* __restrict__ w3 = rhs + (j + 3) * K;
+
+                float s00 = 0.0f, s01 = 0.0f, s02 = 0.0f, s03 = 0.0f;
+                float s10 = 0.0f, s11 = 0.0f, s12 = 0.0f, s13 = 0.0f;
+                float s20 = 0.0f, s21 = 0.0f, s22 = 0.0f, s23 = 0.0f;
+
+                for (std::size_t k = 0; k < K; ++k) {
+                    const float a0 = x0[k];
+                    const float a1 = x1[k];
+                    const float a2 = x2[k];
+
+                    const float b0 = w0[k];
+                    const float b1 = w1[k];
+                    const float b2 = w2[k];
+                    const float b3 = w3[k];
+
+                    s00 += a0 * b0;
+                    s01 += a0 * b1;
+                    s02 += a0 * b2;
+                    s03 += a0 * b3;
+
+                    s10 += a1 * b0;
+                    s11 += a1 * b1;
+                    s12 += a1 * b2;
+                    s13 += a1 * b3;
+
+                    s20 += a2 * b0;
+                    s21 += a2 * b1;
+                    s22 += a2 * b2;
+                    s23 += a2 * b3;
+                }
+
+                y0[j + 0] = s00;
+                y0[j + 1] = s01;
+                y0[j + 2] = s02;
+                y0[j + 3] = s03;
+
+                y1[j + 0] = s10;
+                y1[j + 1] = s11;
+                y1[j + 2] = s12;
+                y1[j + 3] = s13;
+
+                y2[j + 0] = s20;
+                y2[j + 1] = s21;
+                y2[j + 2] = s22;
+                y2[j + 3] = s23;
+            }
+
+            // Remainder columns for the 3-row block.
+            for (; j < N; ++j) {
+                const float* __restrict__ w = rhs + j * K;
+
+                float s0 = 0.0f;
+                float s1 = 0.0f;
+                float s2 = 0.0f;
+
+                for (std::size_t k = 0; k < K; ++k) {
+                    const float b = w[k];
+
+                    s0 += x0[k] * b;
+                    s1 += x1[k] * b;
+                    s2 += x2[k] * b;
+                }
+
+                y0[j] = s0;
+                y1[j] = s1;
+                y2[j] = s2;
+            }
+        }
+
+        // Handle leftover rows with a 2x4 kernel.
+        for (; i + 2 <= M; i += 2) {
+            const float* __restrict__ x0 = lhs + (i + 0) * K;
+            const float* __restrict__ x1 = lhs + (i + 1) * K;
+
+            float* __restrict__ y0 = out + (i + 0) * N;
+            float* __restrict__ y1 = out + (i + 1) * N;
+
+            std::size_t j = 0;
+
+            for (; j + 4 <= N; j += 4) {
+                const float* __restrict__ w0 = rhs + (j + 0) * K;
+                const float* __restrict__ w1 = rhs + (j + 1) * K;
+                const float* __restrict__ w2 = rhs + (j + 2) * K;
+                const float* __restrict__ w3 = rhs + (j + 3) * K;
+
+                float s00 = 0.0f, s01 = 0.0f, s02 = 0.0f, s03 = 0.0f;
+                float s10 = 0.0f, s11 = 0.0f, s12 = 0.0f, s13 = 0.0f;
+
+                for (std::size_t k = 0; k < K; ++k) {
+                    const float a0 = x0[k];
+                    const float a1 = x1[k];
+
+                    const float b0 = w0[k];
+                    const float b1 = w1[k];
+                    const float b2 = w2[k];
+                    const float b3 = w3[k];
+
+                    s00 += a0 * b0;
+                    s01 += a0 * b1;
+                    s02 += a0 * b2;
+                    s03 += a0 * b3;
+
+                    s10 += a1 * b0;
+                    s11 += a1 * b1;
+                    s12 += a1 * b2;
+                    s13 += a1 * b3;
+                }
+
+                y0[j + 0] = s00;
+                y0[j + 1] = s01;
+                y0[j + 2] = s02;
+                y0[j + 3] = s03;
+
+                y1[j + 0] = s10;
+                y1[j + 1] = s11;
+                y1[j + 2] = s12;
+                y1[j + 3] = s13;
+            }
+
+            // Remainder columns for the 2-row block.
+            for (; j < N; ++j) {
+                const float* __restrict__ w = rhs + j * K;
+
+                float s0 = 0.0f;
+                float s1 = 0.0f;
+
+                for (std::size_t k = 0; k < K; ++k) {
+                    const float b = w[k];
+
+                    s0 += x0[k] * b;
+                    s1 += x1[k] * b;
+                }
+
+                y0[j] = s0;
+                y1[j] = s1;
+            }
+        }
+
+        // Handle final leftover row with the original 1x4 kernel.
+        for (; i < M; ++i) {
             const float* __restrict__ x = lhs + i * K;
             float* __restrict__ y = out + i * N;
 
@@ -216,14 +513,13 @@ private:
                 float s2 = 0.0f;
                 float s3 = 0.0f;
 
-                #pragma omp simd reduction(+:s0,s1,s2,s3)
                 for (std::size_t k = 0; k < K; ++k) {
-                    const float xv = x[k];
+                    const float a = x[k];
 
-                    s0 += xv * w0[k];
-                    s1 += xv * w1[k];
-                    s2 += xv * w2[k];
-                    s3 += xv * w3[k];
+                    s0 += a * w0[k];
+                    s1 += a * w1[k];
+                    s2 += a * w2[k];
+                    s3 += a * w3[k];
                 }
 
                 y[j + 0] = s0;
@@ -232,13 +528,374 @@ private:
                 y[j + 3] = s3;
             }
 
-            // Remainder columns.
+            // Remainder columns for the last row.
             for (; j < N; ++j) {
                 const float* __restrict__ w = rhs + j * K;
 
                 float sum = 0.0f;
 
-                #pragma omp simd reduction(+:sum)
+                for (std::size_t k = 0; k < K; ++k) {
+                    sum += x[k] * w[k];
+                }
+
+                y[j] = sum;
+            }
+        }
+    }
+
+
+    __attribute__((noinline))
+    static void multiply_transposed_rhs_float_dot4_kernel_4_4(
+        const float* __restrict__ lhs,
+        const float* __restrict__ rhs,
+        float* __restrict__ out,
+        std::size_t M,
+        std::size_t N,
+        std::size_t K
+    ) {
+        std::size_t i = 0;
+
+        // Main 4x4 kernel:
+        // computes 4 rows of out and 4 columns of out at once.
+        for (; i + 4 <= M; i += 4) {
+            const float* __restrict__ x0 = lhs + (i + 0) * K;
+            const float* __restrict__ x1 = lhs + (i + 1) * K;
+            const float* __restrict__ x2 = lhs + (i + 2) * K;
+            const float* __restrict__ x3 = lhs + (i + 3) * K;
+
+            float* __restrict__ y0 = out + (i + 0) * N;
+            float* __restrict__ y1 = out + (i + 1) * N;
+            float* __restrict__ y2 = out + (i + 2) * N;
+            float* __restrict__ y3 = out + (i + 3) * N;
+
+            std::size_t j = 0;
+
+            for (; j + 4 <= N; j += 4) {
+                const float* __restrict__ w0 = rhs + (j + 0) * K;
+                const float* __restrict__ w1 = rhs + (j + 1) * K;
+                const float* __restrict__ w2 = rhs + (j + 2) * K;
+                const float* __restrict__ w3 = rhs + (j + 3) * K;
+
+                float s00 = 0.0f, s01 = 0.0f, s02 = 0.0f, s03 = 0.0f;
+                float s10 = 0.0f, s11 = 0.0f, s12 = 0.0f, s13 = 0.0f;
+                float s20 = 0.0f, s21 = 0.0f, s22 = 0.0f, s23 = 0.0f;
+                float s30 = 0.0f, s31 = 0.0f, s32 = 0.0f, s33 = 0.0f;
+
+                for (std::size_t k = 0; k < K; ++k) {
+                    const float a0 = x0[k];
+                    const float a1 = x1[k];
+                    const float a2 = x2[k];
+                    const float a3 = x3[k];
+
+                    const float b0 = w0[k];
+                    const float b1 = w1[k];
+                    const float b2 = w2[k];
+                    const float b3 = w3[k];
+
+                    s00 += a0 * b0;
+                    s01 += a0 * b1;
+                    s02 += a0 * b2;
+                    s03 += a0 * b3;
+
+                    s10 += a1 * b0;
+                    s11 += a1 * b1;
+                    s12 += a1 * b2;
+                    s13 += a1 * b3;
+
+                    s20 += a2 * b0;
+                    s21 += a2 * b1;
+                    s22 += a2 * b2;
+                    s23 += a2 * b3;
+
+                    s30 += a3 * b0;
+                    s31 += a3 * b1;
+                    s32 += a3 * b2;
+                    s33 += a3 * b3;
+                }
+
+                y0[j + 0] = s00;
+                y0[j + 1] = s01;
+                y0[j + 2] = s02;
+                y0[j + 3] = s03;
+
+                y1[j + 0] = s10;
+                y1[j + 1] = s11;
+                y1[j + 2] = s12;
+                y1[j + 3] = s13;
+
+                y2[j + 0] = s20;
+                y2[j + 1] = s21;
+                y2[j + 2] = s22;
+                y2[j + 3] = s23;
+
+                y3[j + 0] = s30;
+                y3[j + 1] = s31;
+                y3[j + 2] = s32;
+                y3[j + 3] = s33;
+            }
+
+            // Remainder columns for the 4-row block.
+            for (; j < N; ++j) {
+                const float* __restrict__ w = rhs + j * K;
+
+                float s0 = 0.0f;
+                float s1 = 0.0f;
+                float s2 = 0.0f;
+                float s3 = 0.0f;
+
+                for (std::size_t k = 0; k < K; ++k) {
+                    const float b = w[k];
+
+                    s0 += x0[k] * b;
+                    s1 += x1[k] * b;
+                    s2 += x2[k] * b;
+                    s3 += x3[k] * b;
+                }
+
+                y0[j] = s0;
+                y1[j] = s1;
+                y2[j] = s2;
+                y3[j] = s3;
+            }
+        }
+
+        // Handle leftover rows with the original 1x4 kernel.
+        for (; i < M; ++i) {
+            const float* __restrict__ x = lhs + i * K;
+            float* __restrict__ y = out + i * N;
+
+            std::size_t j = 0;
+
+            for (; j + 4 <= N; j += 4) {
+                const float* __restrict__ w0 = rhs + (j + 0) * K;
+                const float* __restrict__ w1 = rhs + (j + 1) * K;
+                const float* __restrict__ w2 = rhs + (j + 2) * K;
+                const float* __restrict__ w3 = rhs + (j + 3) * K;
+
+                float s0 = 0.0f;
+                float s1 = 0.0f;
+                float s2 = 0.0f;
+                float s3 = 0.0f;
+
+                for (std::size_t k = 0; k < K; ++k) {
+                    const float a = x[k];
+
+                    s0 += a * w0[k];
+                    s1 += a * w1[k];
+                    s2 += a * w2[k];
+                    s3 += a * w3[k];
+                }
+
+                y[j + 0] = s0;
+                y[j + 1] = s1;
+                y[j + 2] = s2;
+                y[j + 3] = s3;
+            }
+
+            // Remainder columns for the final leftover rows.
+            for (; j < N; ++j) {
+                const float* __restrict__ w = rhs + j * K;
+
+                float sum = 0.0f;
+
+                for (std::size_t k = 0; k < K; ++k) {
+                    sum += x[k] * w[k];
+                }
+
+                y[j] = sum;
+            }
+        }
+    }
+
+
+    __attribute__((noinline))
+    static void multiply_transposed_rhs_float_dot4_kernel_6_4(
+        const float* __restrict__ lhs,
+        const float* __restrict__ rhs,
+        float* __restrict__ out,
+        std::size_t M,
+        std::size_t N,
+        std::size_t K
+    ) {
+        std::size_t i = 0;
+
+        // Main 6x4 kernel:
+        // computes 6 rows of out and 4 columns of out at once.
+        for (; i + 6 <= M; i += 6) {
+            const float* __restrict__ x0 = lhs + (i + 0) * K;
+            const float* __restrict__ x1 = lhs + (i + 1) * K;
+            const float* __restrict__ x2 = lhs + (i + 2) * K;
+            const float* __restrict__ x3 = lhs + (i + 3) * K;
+            const float* __restrict__ x4 = lhs + (i + 4) * K;
+            const float* __restrict__ x5 = lhs + (i + 5) * K;
+
+            float* __restrict__ y0 = out + (i + 0) * N;
+            float* __restrict__ y1 = out + (i + 1) * N;
+            float* __restrict__ y2 = out + (i + 2) * N;
+            float* __restrict__ y3 = out + (i + 3) * N;
+            float* __restrict__ y4 = out + (i + 4) * N;
+            float* __restrict__ y5 = out + (i + 5) * N;
+
+            std::size_t j = 0;
+
+            for (; j + 4 <= N; j += 4) {
+                const float* __restrict__ w0 = rhs + (j + 0) * K;
+                const float* __restrict__ w1 = rhs + (j + 1) * K;
+                const float* __restrict__ w2 = rhs + (j + 2) * K;
+                const float* __restrict__ w3 = rhs + (j + 3) * K;
+
+                float s00 = 0.0f, s01 = 0.0f, s02 = 0.0f, s03 = 0.0f;
+                float s10 = 0.0f, s11 = 0.0f, s12 = 0.0f, s13 = 0.0f;
+                float s20 = 0.0f, s21 = 0.0f, s22 = 0.0f, s23 = 0.0f;
+                float s30 = 0.0f, s31 = 0.0f, s32 = 0.0f, s33 = 0.0f;
+                float s40 = 0.0f, s41 = 0.0f, s42 = 0.0f, s43 = 0.0f;
+                float s50 = 0.0f, s51 = 0.0f, s52 = 0.0f, s53 = 0.0f;
+
+                for (std::size_t k = 0; k < K; ++k) {
+                    const float a0 = x0[k];
+                    const float a1 = x1[k];
+                    const float a2 = x2[k];
+                    const float a3 = x3[k];
+                    const float a4 = x4[k];
+                    const float a5 = x5[k];
+
+                    const float b0 = w0[k];
+                    const float b1 = w1[k];
+                    const float b2 = w2[k];
+                    const float b3 = w3[k];
+
+                    s00 += a0 * b0;
+                    s01 += a0 * b1;
+                    s02 += a0 * b2;
+                    s03 += a0 * b3;
+
+                    s10 += a1 * b0;
+                    s11 += a1 * b1;
+                    s12 += a1 * b2;
+                    s13 += a1 * b3;
+
+                    s20 += a2 * b0;
+                    s21 += a2 * b1;
+                    s22 += a2 * b2;
+                    s23 += a2 * b3;
+
+                    s30 += a3 * b0;
+                    s31 += a3 * b1;
+                    s32 += a3 * b2;
+                    s33 += a3 * b3;
+
+                    s40 += a4 * b0;
+                    s41 += a4 * b1;
+                    s42 += a4 * b2;
+                    s43 += a4 * b3;
+
+                    s50 += a5 * b0;
+                    s51 += a5 * b1;
+                    s52 += a5 * b2;
+                    s53 += a5 * b3;
+                }
+
+                y0[j + 0] = s00;
+                y0[j + 1] = s01;
+                y0[j + 2] = s02;
+                y0[j + 3] = s03;
+
+                y1[j + 0] = s10;
+                y1[j + 1] = s11;
+                y1[j + 2] = s12;
+                y1[j + 3] = s13;
+
+                y2[j + 0] = s20;
+                y2[j + 1] = s21;
+                y2[j + 2] = s22;
+                y2[j + 3] = s23;
+
+                y3[j + 0] = s30;
+                y3[j + 1] = s31;
+                y3[j + 2] = s32;
+                y3[j + 3] = s33;
+
+                y4[j + 0] = s40;
+                y4[j + 1] = s41;
+                y4[j + 2] = s42;
+                y4[j + 3] = s43;
+
+                y5[j + 0] = s50;
+                y5[j + 1] = s51;
+                y5[j + 2] = s52;
+                y5[j + 3] = s53;
+            }
+
+            // Remainder columns for the 6-row block.
+            for (; j < N; ++j) {
+                const float* __restrict__ w = rhs + j * K;
+
+                float s0 = 0.0f;
+                float s1 = 0.0f;
+                float s2 = 0.0f;
+                float s3 = 0.0f;
+                float s4 = 0.0f;
+                float s5 = 0.0f;
+
+                for (std::size_t k = 0; k < K; ++k) {
+                    const float b = w[k];
+
+                    s0 += x0[k] * b;
+                    s1 += x1[k] * b;
+                    s2 += x2[k] * b;
+                    s3 += x3[k] * b;
+                    s4 += x4[k] * b;
+                    s5 += x5[k] * b;
+                }
+
+                y0[j] = s0;
+                y1[j] = s1;
+                y2[j] = s2;
+                y3[j] = s3;
+                y4[j] = s4;
+                y5[j] = s5;
+            }
+        }
+
+        // Handle leftover rows with a simple 1x4 kernel.
+        for (; i < M; ++i) {
+            const float* __restrict__ x = lhs + i * K;
+            float* __restrict__ y = out + i * N;
+
+            std::size_t j = 0;
+
+            for (; j + 4 <= N; j += 4) {
+                const float* __restrict__ w0 = rhs + (j + 0) * K;
+                const float* __restrict__ w1 = rhs + (j + 1) * K;
+                const float* __restrict__ w2 = rhs + (j + 2) * K;
+                const float* __restrict__ w3 = rhs + (j + 3) * K;
+
+                float s0 = 0.0f;
+                float s1 = 0.0f;
+                float s2 = 0.0f;
+                float s3 = 0.0f;
+
+                for (std::size_t k = 0; k < K; ++k) {
+                    const float a = x[k];
+
+                    s0 += a * w0[k];
+                    s1 += a * w1[k];
+                    s2 += a * w2[k];
+                    s3 += a * w3[k];
+                }
+
+                y[j + 0] = s0;
+                y[j + 1] = s1;
+                y[j + 2] = s2;
+                y[j + 3] = s3;
+            }
+
+            // Remainder columns for the final leftover rows.
+            for (; j < N; ++j) {
+                const float* __restrict__ w = rhs + j * K;
+
+                float sum = 0.0f;
+
                 for (std::size_t k = 0; k < K; ++k) {
                     sum += x[k] * w[k];
                 }
