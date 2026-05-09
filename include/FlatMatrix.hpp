@@ -3,9 +3,16 @@
 
 #pragma once
 
+#include <algorithm>
+
 #include <cstddef>
+#include <iostream>
 #include <stdexcept>
 #include <vector>
+#include <numeric>
+#include <cmath>
+#include <format>
+#include <map>
 
 #include "MatrixConcepts.hpp"
 
@@ -22,6 +29,9 @@ public:
         if (data.size() != rows * cols) {
             throw std::runtime_error("Data size does not match matrix dimensions.");
         }
+
+        // std::cout << "FlatMatrix dimensions: " << rows_ << " x " << cols_ << "\n";
+        // print_statistics();
     }
 
     std::size_t rows() const noexcept { return rows_; }
@@ -36,6 +46,7 @@ public:
     }
 
     void multiply_transposed_rhs(const FlatMatrix& rhs, FlatMatrix& out) const {
+        // std::cout << "Multiplying matrix " << rows_ << " x " << cols_ << " by matrix " << rhs.cols() << " x " << rhs.rows() << "\n";
         if (cols_ != rhs.cols_) {
             throw std::runtime_error("Dimension mismatch.");
         }
@@ -91,6 +102,67 @@ public:
 
         // 3. Return the stolen data
         return stolen_data;
+    }
+
+    void print_statistics() const {
+        if (data_.empty()) {
+            std::cout << "Matrix is empty.\n";
+            return;
+        }
+
+        size_t total_elements = data_.size();
+        size_t non_zero_count = std::count_if(data_.begin(), data_.end(), [](T v) {
+            return v != T{0};
+        });
+
+        double density = static_cast<double>(non_zero_count) / total_elements;
+        double sparsity = 1.0 - density;
+
+        // Descriptives
+        auto [min_it, max_it] = std::minmax_element(data_.begin(), data_.end());
+        T min_val = *min_it;
+        T max_val = *max_it;
+
+        double sum = std::accumulate(data_.begin(), data_.end(), 0.0);
+        double mean = sum / total_elements;
+
+        double sq_sum = std::inner_product(data_.begin(), data_.end(), data_.begin(), 0.0);
+        double stdev = std::sqrt(sq_sum / total_elements - mean * mean);
+
+        // Header
+        std::cout << "--- Matrix Statistics ---\n";
+        std::cout << std::format("{:<15} : {} x {}\n", "Dimensions", rows_, cols_);
+        std::cout << std::format("{:<15} : {:.2f}%\n", "Density", density * 100.0);
+        std::cout << std::format("{:<15} : {:.2f}%\n", "Sparsity", sparsity * 100.0);
+
+        // Value Stats
+        std::cout << "\n--- Value Distribution ---\n";
+        std::cout << std::format("{:<10} {:>10} {:>10} {:>10}\n", "Min", "Max", "Mean", "StdDev");
+        std::cout << std::format("{:<10.4f} {:>10.4f} {:>10.4f} {:>10.4f}\n",
+                                 (double)min_val, (double)max_val, mean, stdev);
+
+        // Simple Histogram (5 Buckets)
+        std::cout << "\n--- Range Spread ---\n";
+        if (min_val != max_val) {
+            const int BUCKETS = 5;
+            std::vector<size_t> histogram(BUCKETS, 0);
+            double range = static_cast<double>(max_val - min_val);
+
+            for (T val : data_) {
+                int bucket = std::min(static_cast<int>((val - min_val) / range * BUCKETS), BUCKETS - 1);
+                histogram[bucket]++;
+            }
+
+            for (int i = 0; i < BUCKETS; ++i) {
+                double lower = (double)min_val + (range / BUCKETS) * i;
+                double upper = (double)min_val + (range / BUCKETS) * (i + 1);
+                std::string bar(histogram[i] * 20 / total_elements, '#'); // Simple ASCII bar
+                std::cout << std::format("[{:>7.2f}, {:>7.2f}]: {:<5} {}\n", lower, upper, histogram[i], bar);
+            }
+        } else {
+            std::cout << "All values are identical.\n";
+        }
+        std::cout << "-------------------------\n";
     }
 
 private:
