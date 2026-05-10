@@ -103,7 +103,8 @@ std::vector<float> MLPModel::linear_forward(
 
     // Apply ReLU
     if (apply_relu) {
-        Y.transform([](float x) { return std::max(0.0f, x); });
+        // Y.transform([](float x) { return std::max(0.0f, x); });
+        Y.apply_relu();
     }
 
     return Y.take_data();

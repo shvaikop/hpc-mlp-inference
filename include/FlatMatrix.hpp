@@ -163,6 +163,42 @@ public:
         }
     }
 
+    void apply_relu() {
+#if defined(__AVX__)
+        if constexpr (std::is_same_v<T, float>) {
+            relu_inplace_avx_impl();
+            return;
+        }
+#endif
+
+        for (T& val : data_) {
+            val = std::max(T{0}, val);
+        }
+    }
+
+#if defined(__AVX__)
+    __attribute__((noinline))
+    void relu_inplace_avx_impl() {
+        float* data = data_.data();
+        const std::size_t n = data_.size();
+
+        const __m256 zero = _mm256_setzero_ps();
+
+        std::size_t i = 0;
+        const std::size_t vec_end = n & ~std::size_t(7);
+
+        for (; i < vec_end; i += 8) {
+            __m256 x = _mm256_loadu_ps(data + i);
+            x = _mm256_max_ps(x, zero);
+            _mm256_storeu_ps(data + i, x);
+        }
+
+        for (; i < n; ++i) {
+            data[i] = std::max(0.0f, data[i]);
+        }
+    }
+#endif
+
     std::vector<T> take_data() {
         // 1. Steal the data into a temporary return variable
         std::vector<T> stolen_data = std::move(data_);

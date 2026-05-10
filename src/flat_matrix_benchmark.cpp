@@ -109,6 +109,45 @@ void run_add_vector_benchmark(
     }
 }
 
+void run_relu_benchmark(
+    const std::string& label,
+    FlatMatrix<float>& A,
+    std::size_t iterations = 10000,
+    std::size_t warm_up_iters = 50
+) {
+    // Warm-up
+    for (std::size_t i = 0; i < warm_up_iters; ++i) {
+        A.transform([](float x) {
+            return std::max(0.0f, x);
+        });
+
+        // Keep at least one value negative so the compiler cannot reason
+        // that future ReLUs are always no-ops.
+        // A(0, 0) = -1.0f;
+    }
+
+    auto start = std::chrono::high_resolution_clock::now();
+
+    for (std::size_t i = 0; i < iterations; ++i) {
+        A.transform([](float x) {
+            return std::max(0.0f, x);
+        });
+
+        // Prevent the benchmark from becoming "ReLU on already-ReLUed data"
+        // in a completely trivial way.
+        // A(0, 0) = -1.0f;
+    }
+
+    auto end = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double, std::nano> elapsed = (end - start) / iterations;
+    std::cout << std::format("[{:^20}] Average Time: {:.2f} ns\n", label, elapsed.count());
+
+    if (A.rows() > 0 && A(0, 0) == 999.999f) {
+        std::cout << "This will almost never happen, but the compiler doesn't know that.\n";
+    }
+}
+
 /* --- The Four Specific Benchmark Functions --- */
 
 void benchmark_dense_by_dense(size_t M, size_t K, size_t N) {
@@ -141,6 +180,13 @@ void benchmark_add_vector(std::size_t M, std::size_t K, std::size_t N) {
     run_add_vector_benchmark("Add vector", A, Vec);
 }
 
+void benchmark_relu(std::size_t M, std::size_t K, std::size_t N) {
+    (void)N;
+
+    auto A = MatrixGenerator::generate<float>(M, K, 0.0f, -1.0f, 1.0f);
+    run_relu_benchmark("Apply ReLU", A);
+}
+
 int main() {
     // These dimensions simulate a typical small hidden layer
     const size_t M = 16;   // Batch size
@@ -156,6 +202,7 @@ int main() {
     benchmark_sparse_by_sparse(M, K, N);
     benchmark_dense_by_dense(M, K, N);
     benchmark_add_vector(M, K, N);
+    benchmark_relu(M, K, N);
 
     return 0;
 }
