@@ -14,6 +14,10 @@
 #include <format>
 #include <map>
 
+#if defined(__AVX2__)
+#include <immintrin.h>
+#endif
+
 #include "MatrixConcepts.hpp"
 
 
@@ -93,18 +97,64 @@ public:
         }
     }
 
+    __attribute__((noinline))
     void add_row_vector(const std::vector<T>& vec) {
         if (vec.size() != cols_) {
             throw std::runtime_error("Vector size does not match number of columns.");
         }
 
+#if defined(__AVX2__)
+        if constexpr (std::is_same_v<T, float>) {
+            add_row_vector_avx2_impl(vec.data());
+            return;
+        }
+#endif
+
+        // Scalar fallback for non-float T, or when AVX2 is not enabled.
+        // std::cout << "Using slow add_row_vector. __AVX__ is not defined.";
         for (std::size_t r = 0; r < rows_; ++r) {
             T* row = &data_[r * cols_];
+
             for (std::size_t c = 0; c < cols_; ++c) {
                 row[c] += vec[c];
             }
         }
     }
+
+#if defined(__AVX2__)
+    __attribute__((noinline))
+    void add_row_vector_avx2_impl(const float* __restrict vec) {
+        float* __restrict data = data_.data();
+
+        const std::size_t rows = rows_;
+        const std::size_t cols = cols_;
+        const std::size_t vec_end = cols & ~std::size_t(7);
+
+        for (std::size_t r = 0; r < rows; ++r) {
+            float* __restrict row = data + r * cols;
+
+            std::size_t c = 0;
+
+            for (; c < vec_end; c += 8) {
+                __m256 v = _mm256_loadu_ps(vec + c);
+                __m256 x = _mm256_loadu_ps(row + c);
+                x = _mm256_add_ps(x, v);
+                _mm256_storeu_ps(row + c, x);
+            }
+
+            switch (cols - vec_end) {
+                case 7: row[c + 6] += vec[c + 6]; [[fallthrough]];
+                case 6: row[c + 5] += vec[c + 5]; [[fallthrough]];
+                case 5: row[c + 4] += vec[c + 4]; [[fallthrough]];
+                case 4: row[c + 3] += vec[c + 3]; [[fallthrough]];
+                case 3: row[c + 2] += vec[c + 2]; [[fallthrough]];
+                case 2: row[c + 1] += vec[c + 1]; [[fallthrough]];
+                case 1: row[c + 0] += vec[c + 0]; [[fallthrough]];
+                case 0: break;
+            }
+        }
+    }
+#endif
 
     template <typename Func>
     void transform(Func func) {
@@ -184,6 +234,70 @@ public:
             std::cout << "All values are identical.\n";
         }
         std::cout << "-------------------------\n";
+    }
+
+    template <typename U>
+    void print_vector_statistics(const std::vector<U>& vec) {
+        if (vec.empty()) {
+            std::cout << std::format("--- Vector Statistics ---\nVector is empty.\n");
+            return;
+        }
+
+        size_t size = vec.size();
+        size_t non_zero_count = std::count_if(vec.begin(), vec.end(), [](U v) {
+            return v != U{0};
+        });
+
+        double density = static_cast<double>(non_zero_count) / size;
+        double sparsity = 1.0 - density;
+
+        // Basic Descriptives
+        auto [min_it, max_it] = std::minmax_element(vec.begin(), vec.end());
+        U min_val = *min_it;
+        U max_val = *max_it;
+
+        double sum = std::accumulate(vec.begin(), vec.end(), 0.0);
+        double mean = sum / size;
+
+        // Standard Deviation
+        double sq_sum = std::inner_product(vec.begin(), vec.end(), vec.begin(), 0.0);
+        double stdev = std::sqrt(std::abs(sq_sum / size - mean * mean));
+
+        // Header & Dimensions
+        std::cout << std::format("--- Vector Statistics ---\n");
+        std::cout << std::format("{:<15} : {}\n", "Size", size);
+        std::cout << std::format("{:<15} : {:.2f}%\n", "Density", density * 100.0);
+        std::cout << std::format("{:<15} : {:.2f}%\n", "Sparsity", sparsity * 100.0);
+
+        // Value Distribution Table
+        std::cout << "\n--- Value Distribution ---\n";
+        std::cout << std::format("{:<10} {:>10} {:>10} {:>10}\n", "Min", "Max", "Mean", "StdDev");
+        std::cout << std::format("{:<10.4f} {:>10.4f} {:>10.4f} {:>10.4f}\n",
+                                 (double)min_val, (double)max_val, mean, stdev);
+
+        // Histogram Logic
+        std::cout << "\n--- Range Spread ---\n";
+        if (min_val != max_val) {
+            const int BUCKETS = 5;
+            std::vector<size_t> histogram(BUCKETS, 0);
+            double range = static_cast<double>(max_val - min_val);
+
+            for (T val : vec) {
+                int bucket = std::min(static_cast<int>((val - min_val) / range * BUCKETS), BUCKETS - 1);
+                histogram[bucket]++;
+            }
+
+            for (int i = 0; i < BUCKETS; ++i) {
+                double lower = (double)min_val + (range / BUCKETS) * i;
+                double upper = (double)min_val + (range / BUCKETS) * (i + 1);
+                // Scale the bar to a max of 20 characters
+                std::string bar(histogram[i] * 20 / size, '#');
+                std::cout << std::format("[{:>7.2f}, {:>7.2f}]: {:<5} {}\n", lower, upper, histogram[i], bar);
+            }
+        } else {
+            std::cout << "All values are identical.\n";
+        }
+        std::cout << std::string(30, '-') << "\n";
     }
 
 private:

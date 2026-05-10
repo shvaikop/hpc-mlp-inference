@@ -16,75 +16,79 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
-include_directories(include)
-
-# Define the executable and its source files
-add_executable(mlp_infer
-    src/main.cpp
-    src/MLPModel.cpp
-)
-
 add_compile_options(-O3)
 
-add_executable(flat_matrix_benchmark_avx2
-        src/flat_matrix_benchmark.cpp
+include_directories(include)
+
+# Define common source files for all MLP targets
+set(MLP_SOURCES
+        src/main.cpp
+        src/MLPModel.cpp
 )
 
-target_compile_options(flat_matrix_benchmark_avx2 PRIVATE
-#        -march=native
-        -mavx2
-        -mfma
-        -ffast-math
-#        -fopt-info-vec-optimized
-#        -fopt-info-vec-missed
+add_executable(mlp_infer ${MLP_SOURCES})
+
+# --- 1. The "Floor": No Optimization ---
+# This is your scalar baseline. We explicitly turn off the "smart" features.
+add_executable(mlp_infer_no_opt ${MLP_SOURCES})
+target_compile_options(mlp_infer_no_opt PRIVATE
+        -fno-tree-vectorize     # Strictly no SIMD
+        -mno-avx                # Disable AVX hardware
+        -mno-avx2               # Disable AVX2 hardware
 )
 
-add_executable(flat_matrix_benchmark_native
-        src/flat_matrix_benchmark.cpp
-)
-
-target_compile_options(flat_matrix_benchmark_native PRIVATE
-        -march=native
-        -mfma
-        -ffast-math
-#        -fopt-info-vec-optimized
-#        -fopt-info-vec-missed
-)
-
-add_executable(flat_matrix_benchmark_dot4
-        src/flat_matrix_benchmark.cpp
-)
-
-target_compile_options(flat_matrix_benchmark_dot4 PRIVATE
+# --- 3. The "Ceiling": AVX2 Max ---
+# This uses everything the compiler has: native tuning and OpenMP SIMD hints.
+add_executable(mlp_infer_avx2_max ${MLP_SOURCES})
+target_compile_options(mlp_infer_avx2_max PRIVATE
         -O3
         -mavx2
         -mfma
         -ffast-math
-        -fopt-info-vec-optimized
-        -fopt-info-vec-missed
 )
-
-target_compile_definitions(flat_matrix_benchmark_dot4 PRIVATE
+# We enable the DOT4 unrolled logic for the MAX version
+target_compile_definitions(mlp_infer_avx2_max PRIVATE
         FLATMATRIX_USE_DOT4=1
 )
 
-add_executable(flat_matrix_benchmark_dot4_openmp_simd
-        src/flat_matrix_benchmark.cpp
-)
 
-target_compile_options(flat_matrix_benchmark_dot4_openmp_simd PRIVATE
-        -O3
-        -mavx2
-        -mfma
-        -ffast-math
-        -fopenmp-simd
-        -fopt-info-vec-optimized
-        -fopt-info-vec-missed
-)
+set(FLAT_MATRIX_BENCHMARK_SOURCE src/flat_matrix_benchmark.cpp)
 
-target_compile_definitions(flat_matrix_benchmark_dot4_openmp_simd PRIVATE
-        FLATMATRIX_USE_DOT4=1
-)
+# --- STEP 0: Pure Scalar (The Baseline) ---
+# No vectorization, no hardware tricks. Just standard math logic.
+add_executable(flat_matrix_benchmark_0_scalar ${FLAT_MATRIX_BENCHMARK_SOURCE})
+target_compile_options(flat_matrix_benchmark_0_scalar PRIVATE
+        -O3 -fno-tree-vectorize -mno-avx -mno-avx2)
+
+# --- STEP 1: Scalar + Fast Math ---
+# Still no vectorization, but we allow the compiler to reorder math for better pipelining.
+add_executable(flat_matrix_benchmark_1_fast_math ${FLAT_MATRIX_BENCHMARK_SOURCE})
+target_compile_options(flat_matrix_benchmark_1_fast_math PRIVATE
+        -O3 -fno-tree-vectorize -ffast-math)
+
+# --- STEP 2: Auto-Vectorization (Generic x86-64) ---
+# We let the compiler use SIMD, but only standard SSE (128-bit) that works on any 64-bit PC.
+add_executable(flat_matrix_benchmark_2_auto_vec ${FLAT_MATRIX_BENCHMARK_SOURCE})
+target_compile_options(flat_matrix_benchmark_2_auto_vec PRIVATE
+        -O3)
+
+# --- STEP 3: AVX2 + FMA (The Modern Standard) ---
+# Moving to 256-bit wide registers and fused multiply-add.
+add_executable(flat_matrix_benchmark_3_avx2_fma ${FLAT_MATRIX_BENCHMARK_SOURCE})
+target_compile_options(flat_matrix_benchmark_3_avx2_fma PRIVATE
+        -O3 -mavx2 -mfma -ffast-math)
+
+# --- STEP 4: Native Tuning ---
+# Let the compiler use every specific trick your CPU has (like avx_vnni).
+add_executable(flat_matrix_benchmark_4_native ${FLAT_MATRIX_BENCHMARK_SOURCE})
+target_compile_options(flat_matrix_benchmark_4_native PRIVATE
+        -O3 -march=native -ffast-math)
+
+# --- STEP 5: Explicit code so that compiler can vectorize as much as possible ---
+add_executable(flat_matrix_benchmark_5_avx2_dot4 ${FLAT_MATRIX_BENCHMARK_SOURCE})
+target_compile_options(flat_matrix_benchmark_5_avx2_dot4 PRIVATE
+        -O3 -mavx2 -mfma -ffast-math)
+target_compile_definitions(flat_matrix_benchmark_5_avx2_dot4 PRIVATE FLATMATRIX_USE_DOT4=1)
 
 # Tell the compiler where to find your header files
 target_include_directories(mlp_infer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
