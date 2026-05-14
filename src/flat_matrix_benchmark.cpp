@@ -1,208 +1,367 @@
-#include <iostream>
-#include <vector>
-#include <random>
+#include <algorithm>
 #include <chrono>
 #include <format>
+#include <iostream>
+#include <random>
+#include <string>
+#include <vector>
+
 #include "FlatMatrix.hpp"
+#include "FlatMatrixView.hpp"
+#include "MatrixAlgorithms.hpp"
 
 namespace MatrixGenerator {
-    /**
-     * Generates a FlatMatrix with controlled sparsity and value range.
-     * sparsity = 0.95 means 95% of the values are zero.
-     */
-    template <typename T>
-    FlatMatrix<T> generate(size_t rows, size_t cols, float sparsity, T min_val, T max_val) {
-        std::vector<T> data;
-        data.reserve(rows * cols);
 
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::uniform_real_distribution<T> val_dist(min_val, max_val);
-        std::bernoulli_distribution zero_dist(sparsity); // true = make it zero
+template <typename T>
+FlatMatrix<T> generate(
+    std::size_t rows,
+    std::size_t cols,
+    float sparsity,
+    T min_val,
+    T max_val
+) {
+    std::vector<T> data;
+    data.reserve(rows * cols);
 
-        for (size_t i = 0; i < rows * cols; ++i) {
-            if (zero_dist(gen)) {
-                data.push_back(T{0});
-            } else {
-                data.push_back(val_dist(gen));
-            }
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
+    std::uniform_real_distribution<T> val_dist(min_val, max_val);
+    std::bernoulli_distribution zero_dist(sparsity);
+
+    for (std::size_t i = 0; i < rows * cols; ++i) {
+        if (zero_dist(gen)) {
+            data.push_back(T{0});
+        } else {
+            data.push_back(val_dist(gen));
         }
-        return FlatMatrix<T>(rows, cols, data);
     }
 
-    /**
-     * Generates a vector with controlled sparsity and value range.
-     * sparsity = 0.95 means 95% of the values are zero.
-     */
-    template <typename T>
-    std::vector<float> generateVec(std::size_t rows, float sparsity, T min_val, T max_val) {
-        std::vector<T> data;
-        data.reserve(rows);
+    return FlatMatrix<T>(rows, cols, std::move(data));
+}
 
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::uniform_real_distribution<T> val_dist(min_val, max_val);
-        std::bernoulli_distribution zero_dist(sparsity); // true = make it zero
+template <typename T>
+std::vector<T> generateVec(
+    std::size_t size,
+    float sparsity,
+    T min_val,
+    T max_val
+) {
+    std::vector<T> data;
+    data.reserve(size);
 
-        for (std::size_t i = 0; i < rows; ++i) {
-            if (zero_dist(gen)) {
-                data.push_back(T{0});
-            } else {
-                data.push_back(val_dist(gen));
-            }
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
+    std::uniform_real_distribution<T> val_dist(min_val, max_val);
+    std::bernoulli_distribution zero_dist(sparsity);
+
+    for (std::size_t i = 0; i < size; ++i) {
+        if (zero_dist(gen)) {
+            data.push_back(T{0});
+        } else {
+            data.push_back(val_dist(gen));
         }
-        return data;
+    }
+
+    return data;
+}
+
+} // namespace MatrixGenerator
+
+static void prevent_optimize_away(const FlatMatrix<float>& C)
+{
+    if (C.rows() > 0 && C.cols() > 0 && C(0, 0) == 999.999f) {
+        std::cout << "This will almost never happen.\n";
     }
 }
 
-// Helper to run the actual timer
-void run_matrix_mul_benchmark(const std::string& label, const FlatMatrix<float>& A, const FlatMatrix<float>& B, int iterations = 20, std::size_t warm_up_iters = 5) {
-    FlatMatrix<float> C(A.rows(), B.rows()); // Output is M x N
+static void prevent_optimize_away_view(FlatMatrixView<float> C)
+{
+    if (C.rows() > 0 && C.cols() > 0 && C(0, 0) == 999.999f) {
+        std::cout << "This will almost never happen.\n";
+    }
+}
 
-    // Warm-up
+void run_matrix_mul_benchmark_flatmatrix(
+    const std::string& label,
+    const FlatMatrix<float>& A,
+    const FlatMatrix<float>& B,
+    int iterations = 20,
+    std::size_t warm_up_iters = 5
+) {
+    FlatMatrix<float> C(A.rows(), B.rows());
+
     for (std::size_t i = 0; i < warm_up_iters; ++i) {
-        A.multiply_transposed_rhs(B, C);
+        multiply_transposed_rhs(A, B, C);
     }
 
     auto start = std::chrono::high_resolution_clock::now();
+
     for (int i = 0; i < iterations; ++i) {
-        A.multiply_transposed_rhs(B, C);
+        multiply_transposed_rhs(A, B, C);
     }
+
     auto end = std::chrono::high_resolution_clock::now();
 
-    std::chrono::duration<double, std::milli> elapsed = (end - start) / iterations;
-    std::cout << std::format("[{:^20}] Average Time: {:.3f} ms\n", label, elapsed.count());
+    std::chrono::duration<double, std::milli> elapsed =
+        (end - start) / iterations;
 
-    // Force the compiler to care about the result
-    // This tiny check makes it impossible to optimize away the multiplication
-    if (C.rows() > 0 && C(0, 0) == 999.999f) {
-        std::cout << "This will almost never happen, but the compiler doesn't know that.\n";
-    }
+    std::cout << std::format(
+        "[{:^28}] Average Time: {:.3f} ms\n",
+        label,
+        elapsed.count()
+    );
+
+    prevent_optimize_away(C);
 }
 
-// Helper to run the `add_row_vector` benchmark
-void run_add_vector_benchmark(
+void run_matrix_mul_benchmark_view(
+    const std::string& label,
+    const FlatMatrix<float>& A_storage,
+    const FlatMatrix<float>& B_storage,
+    int iterations = 20,
+    std::size_t warm_up_iters = 5
+) {
+    FlatMatrix<float> C_storage(A_storage.rows(), B_storage.rows());
+
+    FlatMatrixView<const float> A = A_storage.view();
+    FlatMatrixView<const float> B = B_storage.view();
+    FlatMatrixView<float> C = C_storage.view();
+
+    for (std::size_t i = 0; i < warm_up_iters; ++i) {
+        multiply_transposed_rhs(A, B, C);
+    }
+
+    auto start = std::chrono::high_resolution_clock::now();
+
+    for (int i = 0; i < iterations; ++i) {
+        multiply_transposed_rhs(A, B, C);
+    }
+
+    auto end = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double, std::milli> elapsed =
+        (end - start) / iterations;
+
+    std::cout << std::format(
+        "[{:^28}] Average Time: {:.3f} ms\n",
+        label,
+        elapsed.count()
+    );
+
+    prevent_optimize_away_view(C);
+}
+
+void run_add_vector_benchmark_flatmatrix(
     const std::string& label,
     FlatMatrix<float>& A,
     const std::vector<float>& vec,
     std::size_t iterations = 10000,
     std::size_t warm_up_iters = 50
-    ) {
-    // Warm-up
+) {
     for (std::size_t i = 0; i < warm_up_iters; ++i) {
-        A.add_row_vector(vec);
+        add_row_vector(A, vec);
     }
 
     auto start = std::chrono::high_resolution_clock::now();
+
     for (std::size_t i = 0; i < iterations; ++i) {
-        A.add_row_vector(vec);
+        add_row_vector(A, vec);
     }
+
     auto end = std::chrono::high_resolution_clock::now();
 
-    std::chrono::duration<double, std::nano> elapsed = (end - start) / iterations;
-    std::cout << std::format("[{:^20}] Average Time: {:.2f} ns\n", label, elapsed.count());
-    
-    // Force the compiler to care about the result
-    // This tiny check makes it impossible to optimize away the multiplication
-    if (A.rows() > 0 && A(0, 0) == 999.999f) {
-        std::cout << "This will almost never happen, but the compiler doesn't know that.\n";
-    }
+    std::chrono::duration<double, std::nano> elapsed =
+        (end - start) / iterations;
+
+    std::cout << std::format(
+        "[{:^28}] Average Time: {:.2f} ns\n",
+        label,
+        elapsed.count()
+    );
+
+    prevent_optimize_away(A);
 }
 
-void run_relu_benchmark(
+void run_add_vector_benchmark_view(
+    const std::string& label,
+    FlatMatrix<float>& A_storage,
+    const std::vector<float>& vec,
+    std::size_t iterations = 10000,
+    std::size_t warm_up_iters = 50
+) {
+    FlatMatrixView<float> A = A_storage.view();
+
+    for (std::size_t i = 0; i < warm_up_iters; ++i) {
+        add_row_vector(A, vec);
+    }
+
+    auto start = std::chrono::high_resolution_clock::now();
+
+    for (std::size_t i = 0; i < iterations; ++i) {
+        add_row_vector(A, vec);
+    }
+
+    auto end = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double, std::nano> elapsed =
+        (end - start) / iterations;
+
+    std::cout << std::format(
+        "[{:^28}] Average Time: {:.2f} ns\n",
+        label,
+        elapsed.count()
+    );
+
+    prevent_optimize_away_view(A);
+}
+
+void run_relu_benchmark_flatmatrix(
     const std::string& label,
     FlatMatrix<float>& A,
     std::size_t iterations = 10000,
     std::size_t warm_up_iters = 50
 ) {
-    // Warm-up
     for (std::size_t i = 0; i < warm_up_iters; ++i) {
-        A.transform([](float x) {
-            return std::max(0.0f, x);
-        });
-
-        // Keep at least one value negative so the compiler cannot reason
-        // that future ReLUs are always no-ops.
-        // A(0, 0) = -1.0f;
+        apply_relu(A);
     }
 
     auto start = std::chrono::high_resolution_clock::now();
 
     for (std::size_t i = 0; i < iterations; ++i) {
-        A.transform([](float x) {
-            return std::max(0.0f, x);
-        });
-
-        // Prevent the benchmark from becoming "ReLU on already-ReLUed data"
-        // in a completely trivial way.
-        // A(0, 0) = -1.0f;
+        apply_relu(A);
     }
 
     auto end = std::chrono::high_resolution_clock::now();
 
-    std::chrono::duration<double, std::nano> elapsed = (end - start) / iterations;
-    std::cout << std::format("[{:^20}] Average Time: {:.2f} ns\n", label, elapsed.count());
+    std::chrono::duration<double, std::nano> elapsed =
+        (end - start) / iterations;
 
-    if (A.rows() > 0 && A(0, 0) == 999.999f) {
-        std::cout << "This will almost never happen, but the compiler doesn't know that.\n";
+    std::cout << std::format(
+        "[{:^28}] Average Time: {:.2f} ns\n",
+        label,
+        elapsed.count()
+    );
+
+    prevent_optimize_away(A);
+}
+
+void run_relu_benchmark_view(
+    const std::string& label,
+    FlatMatrix<float>& A_storage,
+    std::size_t iterations = 10000,
+    std::size_t warm_up_iters = 50
+) {
+    FlatMatrixView<float> A = A_storage.view();
+
+    for (std::size_t i = 0; i < warm_up_iters; ++i) {
+        apply_relu(A);
     }
+
+    auto start = std::chrono::high_resolution_clock::now();
+
+    for (std::size_t i = 0; i < iterations; ++i) {
+        apply_relu(A);
+    }
+
+    auto end = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double, std::nano> elapsed =
+        (end - start) / iterations;
+
+    std::cout << std::format(
+        "[{:^28}] Average Time: {:.2f} ns\n",
+        label,
+        elapsed.count()
+    );
+
+    prevent_optimize_away_view(A);
 }
 
-/* --- The Four Specific Benchmark Functions --- */
+void benchmark_matrix_mul_pair(
+    const std::string& label,
+    std::size_t M,
+    std::size_t K,
+    std::size_t N,
+    float sparsity_A,
+    float sparsity_B
+) {
+    auto A = MatrixGenerator::generate<float>(M, K, sparsity_A, -1.0f, 1.0f);
+    auto B = MatrixGenerator::generate<float>(N, K, sparsity_B, -1.0f, 1.0f);
 
-void benchmark_dense_by_dense(size_t M, size_t K, size_t N) {
-    auto A = MatrixGenerator::generate<float>(M, K, 0.0f, -1.0f, 1.0f);
-    auto B = MatrixGenerator::generate<float>(N, K, 0.0f, -1.0f, 1.0f);
-    run_matrix_mul_benchmark("Dense x Dense", A, B);
+    run_matrix_mul_benchmark_flatmatrix(label + " / FlatMatrix", A, B);
+    run_matrix_mul_benchmark_view(label + " / View", A, B);
 }
 
-void benchmark_dense_by_sparse(size_t M, size_t K, size_t N) {
-    auto A = MatrixGenerator::generate<float>(M, K, 0.0f, -1.0f, 1.0f);
-    auto B = MatrixGenerator::generate<float>(N, K, 0.95f, -1.0f, 1.0f); // 95% zeros
-    run_matrix_mul_benchmark("Dense x Sparse", A, B);
+void benchmark_add_vector(std::size_t M, std::size_t K)
+{
+    auto A1 = MatrixGenerator::generate<float>(M, K, 0.0f, -1.0f, 1.0f);
+    auto A2 = A1;
+
+    auto vec = MatrixGenerator::generateVec<float>(K, 0.0f, 0.05f, 0.2f);
+
+    run_add_vector_benchmark_flatmatrix("Add vector / FlatMatrix", A1, vec);
+    run_add_vector_benchmark_view("Add vector / View", A2, vec);
 }
 
-void benchmark_sparse_by_dense(size_t M, size_t K, size_t N) {
-    auto A = MatrixGenerator::generate<float>(M, K, 0.95f, -1.0f, 1.0f); // 95% zeros
-    auto B = MatrixGenerator::generate<float>(N, K, 0.0f, -1.0f, 1.0f);
-    run_matrix_mul_benchmark("Sparse x Dense", A, B);
+void benchmark_relu(std::size_t M, std::size_t K)
+{
+    auto A1 = MatrixGenerator::generate<float>(M, K, 0.0f, -1.0f, 1.0f);
+    auto A2 = A1;
+
+    run_relu_benchmark_flatmatrix("Apply ReLU / FlatMatrix", A1);
+    run_relu_benchmark_view("Apply ReLU / View", A2);
 }
 
-void benchmark_sparse_by_sparse(size_t M, size_t K, size_t N) {
-    auto A = MatrixGenerator::generate<float>(M, K, 0.95f, -1.0f, 1.0f); // 95% zeros
-    auto B = MatrixGenerator::generate<float>(N, K, 0.95f, -1.0f, 1.0f); // 95% zeros
-    run_matrix_mul_benchmark("Sparse x Sparse", A, B);
-}
+int main()
+{
+    const std::size_t M = 16;
+    const std::size_t K = 4096;
+    const std::size_t N = 4096;
 
-void benchmark_add_vector(std::size_t M, std::size_t K, std::size_t N) {
-    auto A = MatrixGenerator::generate<float>(M, K, 0.0f, -1.0f, 1.0f);
-    auto Vec = MatrixGenerator::generateVec(K, 0.0f, 0.05f, 0.2f);
-    run_add_vector_benchmark("Add vector", A, Vec);
-}
-
-void benchmark_relu(std::size_t M, std::size_t K, std::size_t N) {
-    (void)N;
-
-    auto A = MatrixGenerator::generate<float>(M, K, 0.0f, -1.0f, 1.0f);
-    run_relu_benchmark("Apply ReLU", A);
-}
-
-int main() {
-    // These dimensions simulate a typical small hidden layer
-    const size_t M = 16;   // Batch size
-    const size_t K = 4096; // Input features
-    const size_t N = 4096; // Output features (transposed rows)
-
-    std::cout << "Starting FlatMatrix Benchmarks...\n";
-    std::cout << "Note: All should have similar runtimes because FlatMatrix is a Dense storage format.\n";
+    std::cout << "Starting FlatMatrix / FlatMatrixView Benchmarks...\n";
+    std::cout << "M = " << M << ", K = " << K << ", N = " << N << '\n';
     std::cout << "----------------------------------------------------------\n";
 
-    benchmark_dense_by_sparse(M, K, N);
-    benchmark_sparse_by_dense(M, K, N);
-    benchmark_sparse_by_sparse(M, K, N);
-    benchmark_dense_by_dense(M, K, N);
-    benchmark_add_vector(M, K, N);
-    benchmark_relu(M, K, N);
+    benchmark_matrix_mul_pair(
+        "Dense x Sparse",
+        M,
+        K,
+        N,
+        0.0f,
+        0.95f
+    );
+
+    benchmark_matrix_mul_pair(
+        "Sparse x Dense",
+        M,
+        K,
+        N,
+        0.95f,
+        0.0f
+    );
+
+    benchmark_matrix_mul_pair(
+        "Sparse x Sparse",
+        M,
+        K,
+        N,
+        0.95f,
+        0.95f
+    );
+
+    benchmark_matrix_mul_pair(
+        "Dense x Dense",
+        M,
+        K,
+        N,
+        0.0f,
+        0.0f
+    );
+
+    benchmark_add_vector(M, K);
+    benchmark_relu(M, K);
 
     return 0;
 }

@@ -1645,3 +1645,374 @@ Disassembly of section .text:
 Disassembly of section .fini:
 (base) pshvaiko@ps-tp:~/Documents/HPC_PROJECT_MLP_INFERENCE/build$
 ```
+
+
+
+### Optimizing memory utilization and allocation
+
+(base) pshvaiko@ps-tp:~/Documents/HPC_PROJECT_MLP_INFERENCE/build$ ./mlp_infer_avx2_max --export-dir ../cifar10_embedding_mlp/export --input ../cifar10_embedding_mlp/export/test_input_all/test_input_embeddings_all.bin --batch-size 128 --num-batches 1
+================================================================================
+Input dim    : 512
+Num classes  : 10
+Batch size   : 128
+Total samples: 128
+Total batches: 1
+================================================================================
+Processed batch 1/1 in 410.554 ms
+================================================================================
+Benchmark Results
+================================================================================
+Mean latency : 410.554 ms
+Std dev      : 0 ms
+Throughput   : 311.774 samples/sec
+================================================================================
+Wrote logits to: cpp_output_logits.bin
+Wrote preds  to: cpp_output_preds.bin
+
+--- Full Inference Profile ---
+Step                      |      Elapsed |     Step Dur
+-------------------------------------------------------
+Batch_0_start             |          0 us |          0 us
+Layer_0_start             |        222 us |        222 us
+Before_matrix_init        |        224 us |          1 us
+After_matrix_init         |       7795 us |       7570 us
+After_matrix_mul          |      24950 us |      17155 us
+After_matrix_add          |      25139 us |        189 us
+After_matrix_relu         |      25248 us |        108 us
+Layer_1_start             |      25960 us |        711 us
+Before_matrix_init        |      25960 us |          0 us
+After_matrix_init         |      73719 us |      47758 us
+After_matrix_mul          |     223420 us |     149701 us
+After_matrix_add          |     223565 us |        144 us
+After_matrix_relu         |     223664 us |         99 us
+Layer_2_start             |     227167 us |       3502 us
+Before_matrix_init        |     227167 us |          0 us
+After_matrix_init         |     267436 us |      40268 us
+After_matrix_mul          |     406737 us |     139301 us
+After_matrix_add          |     406890 us |        153 us
+After_matrix_relu         |     406999 us |        108 us
+Layer_3_start             |     410052 us |       3052 us
+Before_matrix_init        |     410053 us |          1 us
+After_matrix_init         |     410252 us |        198 us
+After_matrix_mul          |     410551 us |        299 us
+After_matrix_add          |     410552 us |          1 us
+After_matrix_relu         |     410553 us |          0 us
+Batch_0_end               |     410553 us |          0 us
+-------------------------------------------------------
+
+
+
+
+(base) pshvaiko@ps-tp:~/Documents/HPC_PROJECT_MLP_INFERENCE/build$ ./mlp_infer_avx2_max --export-dir ../cifar10_embedding_mlp/export --input ../cifar10_embedding_mlp/export/test_input_all/test_input_embeddings_all.bin --batch-size 256 --num-batches 1
+================================================================================
+Input dim    : 512
+Num classes  : 10
+Batch size   : 256
+Total samples: 256
+Total batches: 1
+================================================================================
+Processed batch 1/1 in 686.944 ms
+================================================================================
+Benchmark Results
+================================================================================
+Mean latency : 686.944 ms
+Std dev      : 0 ms
+Throughput   : 372.665 samples/sec
+================================================================================
+Wrote logits to: cpp_output_logits.bin
+Wrote preds  to: cpp_output_preds.bin
+
+--- Full Inference Profile ---
+Step                      |      Elapsed |     Step Dur
+-------------------------------------------------------
+Batch_0_start             |          0 us |          0 us
+Layer_0_start             |        464 us |        464 us
+Before_matrix_init        |        466 us |          1 us
+After_matrix_init         |       9877 us |       9410 us
+After_matrix_mul          |      42715 us |      32838 us
+After_matrix_add          |      43130 us |        414 us
+After_matrix_relu         |      43414 us |        284 us
+Layer_1_start             |      43950 us |        536 us
+Before_matrix_init        |      43951 us |          0 us
+After_matrix_init         |      93555 us |      49604 us
+After_matrix_mul          |     370892 us |     277336 us
+After_matrix_add          |     371191 us |        299 us
+After_matrix_relu         |     371412 us |        221 us
+Layer_2_start             |     373938 us |       2525 us
+Before_matrix_init        |     373939 us |          0 us
+After_matrix_init         |     415314 us |      41374 us
+After_matrix_mul          |     683354 us |     268040 us
+After_matrix_add          |     683665 us |        311 us
+After_matrix_relu         |     683893 us |        227 us
+Layer_3_start             |     685913 us |       2019 us
+Before_matrix_init        |     685914 us |          1 us
+After_matrix_init         |     686362 us |        448 us
+After_matrix_mul          |     686941 us |        579 us
+After_matrix_add          |     686943 us |          1 us
+After_matrix_relu         |     686943 us |          0 us
+Batch_0_end               |     686943 us |          0 us
+-------------------------------------------------------
+
+
+
+(base) pshvaiko@ps-tp:~/Documents/HPC_PROJECT_MLP_INFERENCE/build$ ./mlp_infer_avx2_max --export-dir ../cifar10_embedding_mlp/export --input ../cifar10_embedding_mlp/export/test_input_all/test_input_embeddings_all.bin --batch-size 64 --num-batches 1
+================================================================================
+Input dim    : 512
+Num classes  : 10
+Batch size   : 64
+Total samples: 64
+Total batches: 1
+================================================================================
+Processed batch 1/1 in 256.735 ms
+================================================================================
+Benchmark Results
+================================================================================
+Mean latency : 256.735 ms
+Std dev      : 0 ms
+Throughput   : 249.284 samples/sec
+================================================================================
+Wrote logits to: cpp_output_logits.bin
+Wrote preds  to: cpp_output_preds.bin
+
+--- Full Inference Profile ---
+Step                      |      Elapsed |     Step Dur
+-------------------------------------------------------
+Batch_0_start             |          0 us |          0 us
+Layer_0_start             |        115 us |        115 us
+Before_matrix_init        |        117 us |          1 us
+After_matrix_init         |       6484 us |       6367 us
+After_matrix_mul          |      15779 us |       9294 us
+After_matrix_add          |      15865 us |         85 us
+After_matrix_relu         |      15903 us |         38 us
+Layer_1_start             |      16391 us |        488 us
+Before_matrix_init        |      16392 us |          0 us
+After_matrix_init         |      62921 us |      46528 us
+After_matrix_mul          |     143358 us |      80437 us
+After_matrix_add          |     143430 us |         71 us
+After_matrix_relu         |     143474 us |         44 us
+Layer_2_start             |     145632 us |       2157 us
+Before_matrix_init        |     145632 us |          0 us
+After_matrix_init         |     185386 us |      39753 us
+After_matrix_mul          |     254376 us |      68989 us
+After_matrix_add          |     254458 us |         82 us
+After_matrix_relu         |     254500 us |         42 us
+Layer_3_start             |     256497 us |       1997 us
+Before_matrix_init        |     256498 us |          1 us
+After_matrix_init         |     256599 us |        101 us
+After_matrix_mul          |     256733 us |        133 us
+After_matrix_add          |     256734 us |          0 us
+After_matrix_relu         |     256734 us |          0 us
+Batch_0_end               |     256735 us |          0 us
+-------------------------------------------------------
+
+
+
+(base) pshvaiko@ps-tp:~/Documents/HPC_PROJECT_MLP_INFERENCE/build$ ./mlp_infer_avx2_max --export-dir ../cifar10_embedding_mlp/export --input ../cifar10_embedding_mlp/export/test_input_all/test_input_embeddings_all.bin --batch-size 512 --num-batches 1
+================================================================================
+Input dim    : 512
+Num classes  : 10
+Batch size   : 512
+Total samples: 512
+Total batches: 1
+================================================================================
+Processed batch 1/1 in 1291.05 ms
+================================================================================
+Benchmark Results
+================================================================================
+Mean latency : 1291.05 ms
+Std dev      : 0 ms
+Throughput   : 396.575 samples/sec
+================================================================================
+Wrote logits to: cpp_output_logits.bin
+Wrote preds  to: cpp_output_preds.bin
+
+--- Full Inference Profile ---
+Step                      |      Elapsed |     Step Dur
+-------------------------------------------------------
+Batch_0_start             |          0 us |          0 us
+Layer_0_start             |       1209 us |       1209 us
+Before_matrix_init        |       1211 us |          1 us
+After_matrix_init         |      16600 us |      15389 us
+After_matrix_mul          |      82604 us |      66003 us
+After_matrix_add          |      83446 us |        842 us
+After_matrix_relu         |      84128 us |        681 us
+Layer_1_start             |      84703 us |        575 us
+Before_matrix_init        |      84704 us |          0 us
+After_matrix_init         |     140873 us |      56169 us
+After_matrix_mul          |     681820 us |     540946 us
+After_matrix_add          |     682387 us |        567 us
+After_matrix_relu         |     682882 us |        494 us
+Layer_2_start             |     685095 us |       2212 us
+Before_matrix_init        |     685096 us |          1 us
+After_matrix_init         |     727015 us |      41918 us
+After_matrix_mul          |    1285011 us |     557996 us
+After_matrix_add          |    1285722 us |        711 us
+After_matrix_relu         |    1286300 us |        577 us
+Layer_3_start             |    1288743 us |       2443 us
+Before_matrix_init        |    1288745 us |          1 us
+After_matrix_init         |    1289342 us |        596 us
+After_matrix_mul          |    1291049 us |       1707 us
+After_matrix_add          |    1291052 us |          2 us
+After_matrix_relu         |    1291052 us |          0 us
+Batch_0_end               |    1291053 us |          1 us
+-------------------------------------------------------
+
+
+
+(base) pshvaiko@ps-tp:~/Documents/HPC_PROJECT_MLP_INFERENCE/build$ ./mlp_infer_avx2_max --export-dir ../cifar10_embedding_mlp/export --input ../cifar10_embedding_mlp/export/test_input_all/test_input_embeddings_all.bin --batch-size 1024 --num-batches 1
+================================================================================
+Input dim    : 512
+Num classes  : 10
+Batch size   : 1024
+Total samples: 1024
+Total batches: 1
+================================================================================
+Processed batch 1/1 in 2674.58 ms
+================================================================================
+Benchmark Results
+================================================================================
+Mean latency : 2674.58 ms
+Std dev      : 0 ms
+Throughput   : 382.864 samples/sec
+================================================================================
+Wrote logits to: cpp_output_logits.bin
+Wrote preds  to: cpp_output_preds.bin
+
+--- Full Inference Profile ---
+Step                      |      Elapsed |     Step Dur
+-------------------------------------------------------
+Batch_0_start             |          0 us |          0 us
+Layer_0_start             |       2426 us |       2426 us
+Before_matrix_init        |       2429 us |          2 us
+After_matrix_init         |      24843 us |      22414 us
+After_matrix_mul          |     151765 us |     126922 us
+After_matrix_add          |     153498 us |       1732 us
+After_matrix_relu         |     155076 us |       1578 us
+Layer_1_start             |     155616 us |        539 us
+Before_matrix_init        |     155616 us |          0 us
+After_matrix_init         |     214667 us |      59051 us
+After_matrix_mul          |    1318072 us |    1103405 us
+After_matrix_add          |    1319253 us |       1181 us
+After_matrix_relu         |    1320243 us |        989 us
+Layer_2_start             |    1323268 us |       3025 us
+Before_matrix_init        |    1323268 us |          0 us
+After_matrix_init         |    1383797 us |      60528 us
+After_matrix_mul          |    2663602 us |    1279804 us
+After_matrix_add          |    2665022 us |       1420 us
+After_matrix_relu         |    2666171 us |       1149 us
+Layer_3_start             |    2669253 us |       3082 us
+Before_matrix_init        |    2669254 us |          1 us
+After_matrix_init         |    2670927 us |       1673 us
+After_matrix_mul          |    2674573 us |       3645 us
+After_matrix_add          |    2674577 us |          4 us
+After_matrix_relu         |    2674577 us |          0 us
+Batch_0_end               |    2674578 us |          1 us
+-------------------------------------------------------
+
+
+
+(base) pshvaiko@ps-tp:~/Documents/HPC_PROJECT_MLP_INFERENCE/build$ ./mlp_infer_avx2_max --export-dir ../cifar10_embedding_mlp/export --input ../cifar10_embedding_mlp/export/test_input_all/test_input_embeddings_all.bin --batch-size 2048 --num-batches 1
+================================================================================
+Input dim    : 512
+Num classes  : 10
+Batch size   : 2048
+Total samples: 2048
+Total batches: 1
+================================================================================
+Processed batch 1/1 in 5567.46 ms
+================================================================================
+Benchmark Results
+================================================================================
+Mean latency : 5567.46 ms
+Std dev      : 0 ms
+Throughput   : 367.852 samples/sec
+================================================================================
+Wrote logits to: cpp_output_logits.bin
+Wrote preds  to: cpp_output_preds.bin
+
+--- Full Inference Profile ---
+Step                      |      Elapsed |     Step Dur
+-------------------------------------------------------
+Batch_0_start             |          0 us |          0 us
+Layer_0_start             |       3773 us |       3773 us
+Before_matrix_init        |       3775 us |          2 us
+After_matrix_init         |      42439 us |      38663 us
+After_matrix_mul          |     263670 us |     221231 us
+After_matrix_add          |     267670 us |       4000 us
+After_matrix_relu         |     270359 us |       2689 us
+Layer_1_start             |     270990 us |        630 us
+Before_matrix_init        |     270990 us |          0 us
+After_matrix_init         |     351267 us |      80276 us
+After_matrix_mul          |    2852094 us |    2500826 us
+After_matrix_add          |    2854465 us |       2370 us
+After_matrix_relu         |    2856542 us |       2077 us
+Layer_2_start             |    2860555 us |       4012 us
+Before_matrix_init        |    2860556 us |          1 us
+After_matrix_init         |    2944065 us |      83508 us
+After_matrix_mul          |    5524459 us |    2580394 us
+After_matrix_add          |    5527211 us |       2752 us
+After_matrix_relu         |    5529763 us |       2551 us
+Layer_3_start             |    5535170 us |       5407 us
+Before_matrix_init        |    5535172 us |          2 us
+After_matrix_init         |    5557982 us |      22809 us
+After_matrix_mul          |    5564777 us |       6795 us
+After_matrix_add          |    5564786 us |          8 us
+After_matrix_relu         |    5564786 us |          0 us
+Batch_0_end               |    5567462 us |       2676 us
+-------------------------------------------------------
+
+
+
+(base) pshvaiko@ps-tp:~/Documents/HPC_PROJECT_MLP_INFERENCE/build$ ./mlp_infer_avx2_max --export-dir ../cifar10_embedding_mlp/export --input ../cifar10_embedding_mlp/export/test_input_all/test_input_embeddings_all.bin --batch-size 4096 --num-batches 1
+================================================================================
+Input dim    : 512
+Num classes  : 10
+Batch size   : 4096
+Total samples: 4096
+Total batches: 1
+================================================================================
+Processed batch 1/1 in 11303.7 ms
+================================================================================
+Benchmark Results
+================================================================================
+Mean latency : 11303.7 ms
+Std dev      : 0 ms
+Throughput   : 362.361 samples/sec
+================================================================================
+Wrote logits to: cpp_output_logits.bin
+Wrote preds  to: cpp_output_preds.bin
+
+--- Full Inference Profile ---
+Step                      |      Elapsed |     Step Dur
+-------------------------------------------------------
+Batch_0_start             |          0 us |          0 us
+Layer_0_start             |       5227 us |       5227 us
+Before_matrix_init        |       5229 us |          1 us
+After_matrix_init         |      72736 us |      67507 us
+After_matrix_mul          |     498761 us |     426024 us
+After_matrix_add          |     505200 us |       6438 us
+After_matrix_relu         |     509484 us |       4283 us
+Layer_1_start             |     510457 us |        973 us
+Before_matrix_init        |     510457 us |          0 us
+After_matrix_init         |     635816 us |     125358 us
+After_matrix_mul          |    5769547 us |    5133730 us
+After_matrix_add          |    5775141 us |       5594 us
+After_matrix_relu         |    5779663 us |       4521 us
+Layer_2_start             |    5787865 us |       8201 us
+Before_matrix_init        |    5787866 us |          1 us
+After_matrix_init         |    5936082 us |     148215 us
+After_matrix_mul          |   11220309 us |    5284227 us
+After_matrix_add          |   11226131 us |       5821 us
+After_matrix_relu         |   11230715 us |       4583 us
+Layer_3_start             |   11239501 us |       8786 us
+Before_matrix_init        |   11239503 us |          1 us
+After_matrix_init         |   11284772 us |      45269 us
+After_matrix_mul          |   11298364 us |      13591 us
+After_matrix_add          |   11298384 us |         20 us
+After_matrix_relu         |   11298384 us |          0 us
+Batch_0_end               |   11303660 us |       5275 us
+-------------------------------------------------------
+
+
+
+

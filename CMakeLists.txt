@@ -56,7 +56,10 @@ set(FLAT_MATRIX_BENCHMARK_SOURCE src/flat_matrix_benchmark.cpp)
 
 # --- STEP 0: Pure Scalar (The Baseline) ---
 # No vectorization, no hardware tricks. Just standard math logic.
-add_executable(flat_matrix_benchmark_0_scalar ${FLAT_MATRIX_BENCHMARK_SOURCE})
+add_executable(flat_matrix_benchmark_0_scalar ${FLAT_MATRIX_BENCHMARK_SOURCE}
+        include/utils.hpp
+        include/FlatMatrixView.hpp
+        include/MatrixAlgorithms.hpp)
 target_compile_options(flat_matrix_benchmark_0_scalar PRIVATE
         -O3 -fno-tree-vectorize -mno-avx -mno-avx2)
 

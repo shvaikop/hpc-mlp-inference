@@ -1,10 +1,12 @@
 #include "MatrixConcepts.hpp"
 #include "MLPModel.hpp"
 #include "FlatMatrix.hpp"
+#include "FlatMatrixView.hpp"
 #include "json.hpp"
 
 #include <algorithm>
 #include <stdexcept>
+#include <format>
 
 using json = nlohmann::json;
 namespace fs = std::filesystem;
@@ -84,20 +86,37 @@ void MLPModel::load_from_export_dir(const fs::path& export_dir) {
     }
 }
 
-std::vector<float> MLPModel::infer_batch(const std::vector<float>& input, std::size_t batch_size) const {
+std::vector<float> MLPModel::infer_batch(const std::vector<float>& input, std::size_t batch_size, ProfileData& profile_data) const {
     if (input.size() != batch_size * input_dim_) {
         throw std::runtime_error(
             "Input size mismatch: got " + std::to_string(input.size()) +
             ", expected " + std::to_string(batch_size * input_dim_));
     }
-
-    std::vector<float> activations = input;
+    std::vector<float> activations;
     std::size_t current_dim = input_dim_;
 
     for (std::size_t layer_idx = 0; layer_idx < layers_.size(); ++layer_idx) {
+        profile_data.append_timestamp(std::format("Layer_{}_start", layer_idx));
         const bool apply_relu = (layer_idx + 1 != layers_.size());
-        activations = linear_forward<FlatMatrix<float>>(activations, batch_size, current_dim, layers_[layer_idx], apply_relu);
-        current_dim = layers_[layer_idx].out_features;
+        auto next_activations =
+        linear_forward<FlatMatrix<float>, FlatMatrixView<const float>>(
+            layer_idx == 0 ? input : activations,
+            batch_size,
+            current_dim,
+            layers_[layer_idx],
+            apply_relu,
+            profile_data
+        );
+
+            profile_data.append_timestamp(std::format("Layer_{}_after_return", layer_idx));
+
+            activations = std::move(next_activations);
+
+            profile_data.append_timestamp(std::format("Layer_{}_after_move_assign", layer_idx));
+
+            current_dim = layers_[layer_idx].out_features;
+
+            profile_data.append_timestamp(std::format("Layer_{}_end", layer_idx));
     }
 
     return activations;

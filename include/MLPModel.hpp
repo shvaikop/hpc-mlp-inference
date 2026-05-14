@@ -4,6 +4,8 @@
 #pragma once
 
 #include "MatrixConcepts.hpp"
+#include "utils.hpp"
+#include "MatrixAlgorithms.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -12,6 +14,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <span>
 
 struct LinearLayer {
     std::size_t in_features = 0;
@@ -30,7 +33,7 @@ public:
 
     // Input shape:  [batch_size, input_dim]
     // Output shape: [batch_size, num_classes]
-    std::vector<float> infer_batch(const std::vector<float>& input, std::size_t batch_size) const;
+    std::vector<float> infer_batch(const std::vector<float>& input, std::size_t batch_size, ProfileData& profile_data) const;
 
     std::vector<std::int64_t> predict_batch(const std::vector<float>& logits, std::size_t batch_size) const;
 
@@ -43,14 +46,15 @@ private:
     template <typename T>
     static std::vector<T> read_binary_file(const std::filesystem::path& path);
 
-    template <typename MatrixType>
-        requires IMatrix<MatrixType, float>
+    template <typename MatrixType, typename MatrixViewType>
+        requires IMatrix<MatrixType, float> && IMatrix<MatrixViewType, float> && WritableMatrix<MatrixType>
     static std::vector<float> linear_forward(
         const std::vector<float>& input,
         std::size_t batch_size,
         std::size_t input_dim,
         const LinearLayer& layer,
-        bool apply_relu
+        bool apply_relu,
+        ProfileData& profile_data
     );
 };
 
@@ -81,31 +85,106 @@ std::vector<T> MLPModel::read_binary_file(const std::filesystem::path& path) {
     return data;
 }
 
-template <typename MatrixType>
-    requires IMatrix<MatrixType, float>
+template <typename MatrixType, typename MatrixViewType>
+    requires IMatrix<MatrixType, float> && IMatrix<MatrixViewType, float> && WritableMatrix<MatrixType>
 std::vector<float> MLPModel::linear_forward(
     const std::vector<float>& input,
     std::size_t batch_size,
     std::size_t input_dim,
     const LinearLayer& layer,
-    bool apply_relu
+    bool apply_relu_flag,
+    ProfileData& profile_data
 ) {
     if (input_dim != layer.in_features) {
         throw std::runtime_error("Layer input dimension mismatch.");
     }
 
-    MatrixType X(batch_size, input_dim, input);
-    MatrixType W(layer.out_features, layer.in_features, layer.weight);
-    MatrixType Y(batch_size, layer.out_features);
-
-    X.multiply_transposed_rhs(W, Y);
-    Y.add_row_vector(layer.bias);
-
-    // Apply ReLU
-    if (apply_relu) {
-        // Y.transform([](float x) { return std::max(0.0f, x); });
-        Y.apply_relu();
+    if (input.size() != batch_size * input_dim) {
+        throw std::runtime_error("Input size does not match batch_size * input_dim.");
     }
+
+    if (layer.weight.size() != layer.out_features * layer.in_features) {
+        throw std::runtime_error("Layer weight size does not match layer dimensions.");
+    }
+
+    if (layer.bias.size() != layer.out_features) {
+        throw std::runtime_error("Layer bias size does not match output dimension.");
+    }
+
+    std::vector<float> y_buffer(batch_size * layer.out_features);
+
+    profile_data.append_timestamp("Before_matrix_init");
+
+    std::span<const float> input_span(
+        input.data(),
+        input.size()
+    );
+
+    std::span<const float> weight_span(
+        layer.weight.data(),
+        layer.weight.size()
+    );
+
+    MatrixViewType X(
+        input_span,
+        batch_size,
+        input_dim
+    );
+
+    MatrixViewType W(
+        weight_span,
+        layer.out_features,
+        layer.in_features
+    );
+
+    profile_data.append_timestamp("Middle_matrix_init");
+
+    // Owning output matrix: this is the only matrix allocation here.
+    MatrixType Y(
+        batch_size,
+        layer.out_features,
+        std::move(y_buffer)
+    );
+
+    // std::cout << "X view: "
+    //           << batch_size << " x " << input_dim
+    //           << ", elements: " << batch_size * input_dim
+    //           << ", bytes referenced: " << batch_size * input_dim * sizeof(float)
+    //           << ", newly allocated bytes: 0"
+    //           << '\n';
+    //
+    // std::cout << "W view: "
+    //           << layer.out_features << " x " << layer.in_features
+    //           << ", elements: " << layer.out_features * layer.in_features
+    //           << ", bytes referenced: "
+    //           << layer.out_features * layer.in_features * sizeof(float)
+    //           << ", newly allocated bytes: 0"
+    //           << '\n';
+    //
+    // std::cout << "Y owning: "
+    //           << batch_size << " x " << layer.out_features
+    //           << ", elements: " << batch_size * layer.out_features
+    //           << ", newly allocated bytes: "
+    //           << batch_size * layer.out_features * sizeof(float)
+    //           << '\n';
+    //
+    // std::cout << "Total newly allocated bytes: "
+    //           << batch_size * layer.out_features * sizeof(float)
+    //           << '\n';
+
+    profile_data.append_timestamp("After_matrix_init");
+
+    multiply_transposed_rhs(X, W, Y);
+    profile_data.append_timestamp("After_matrix_mul");
+
+    add_row_vector(Y, layer.bias);
+    profile_data.append_timestamp("After_matrix_add");
+
+    if (apply_relu_flag) {
+        apply_relu(Y);
+    }
+
+    profile_data.append_timestamp("After_matrix_relu");
 
     return Y.take_data();
 }

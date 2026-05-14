@@ -1,5 +1,6 @@
 #include "MLPModel.hpp"
 #include "CLI11.hpp"
+#include "utils.hpp"
 
 #include <optional>
 #include <algorithm>
@@ -9,6 +10,7 @@
 #include <chrono>
 #include <numeric>
 #include <cmath>
+#include <format>
 
 namespace fs = std::filesystem;
 
@@ -118,7 +120,8 @@ int main(int argc, char **argv)
         std::cout << "  Total samples: " << num_samples << "\n";                          
         std::cout << "  Total batches: " << cfg.num_batches.value() << "\n";
         std::cout << "================================================================================\n";
-        
+
+        ProfileData profile_data{};
         std::vector<double> batch_times;                                                  
         const std::size_t stride = cfg.batch_size * model.input_dim();
         
@@ -132,9 +135,11 @@ int main(int argc, char **argv)
             const std::vector<float> batch_input(batch_start, batch_start + stride);
                                                                                             
             // Calculate the time for each batch inference
-            const auto t_start = std::chrono::high_resolution_clock::now();               
-            const std::vector<float> logits = model.infer_batch(batch_input, cfg.batch_size);                                                                  
-            const auto t_end = std::chrono::high_resolution_clock::now();                 
+            const auto t_start = std::chrono::high_resolution_clock::now();
+            profile_data.append_timestamp(std::format("Batch_{}_start", i), t_start);
+            const std::vector<float> logits = model.infer_batch(batch_input, cfg.batch_size, profile_data);
+            const auto t_end = std::chrono::high_resolution_clock::now();
+            profile_data.append_timestamp(std::format("Batch_{}_end", i), t_end);
                                                                                             
             batch_times.push_back(std::chrono::duration<double, std::milli>(t_end - t_start).count());
 
@@ -171,6 +176,8 @@ int main(int argc, char **argv)
 
         std::cout << "Wrote logits to: " << cfg.logits_out << "\n";
         std::cout << "Wrote preds  to: " << cfg.preds_out << "\n";
+
+        profile_data.print_timestamps();
 
         const auto &class_names = model.class_names();
         std::cout << "\nFirst 10 predictions:\n";
