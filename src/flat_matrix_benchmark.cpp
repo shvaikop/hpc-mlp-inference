@@ -2,7 +2,6 @@
 #include <vector>
 #include <random>
 #include <chrono>
-#include <format>
 #include "FlatMatrix.hpp"
 
 namespace MatrixGenerator {
@@ -71,7 +70,7 @@ void run_matrix_mul_benchmark(const std::string& label, const FlatMatrix<float>&
     auto end = std::chrono::high_resolution_clock::now();
 
     std::chrono::duration<double, std::milli> elapsed = (end - start) / iterations;
-    std::cout << std::format("[{:^20}] Average Time: {:.3f} ms\n", label, elapsed.count());
+    printf("[%20s] Average Time: %.3f ms\n", label.c_str(), elapsed.count());
 
     // Force the compiler to care about the result
     // This tiny check makes it impossible to optimize away the multiplication
@@ -100,7 +99,7 @@ void run_add_vector_benchmark(
     auto end = std::chrono::high_resolution_clock::now();
 
     std::chrono::duration<double, std::nano> elapsed = (end - start) / iterations;
-    std::cout << std::format("[{:^20}] Average Time: {:.2f} ns\n", label, elapsed.count());
+    printf("[%20s] Average Time: %.2f ns\n", label.c_str(), elapsed.count());
     
     // Force the compiler to care about the result
     // This tiny check makes it impossible to optimize away the multiplication
@@ -141,7 +140,7 @@ void run_relu_benchmark(
     auto end = std::chrono::high_resolution_clock::now();
 
     std::chrono::duration<double, std::nano> elapsed = (end - start) / iterations;
-    std::cout << std::format("[{:^20}] Average Time: {:.2f} ns\n", label, elapsed.count());
+    printf("[%20s] Average Time: %.2f ns\n", label.c_str(), elapsed.count());
 
     if (A.rows() > 0 && A(0, 0) == 999.999f) {
         std::cout << "This will almost never happen, but the compiler doesn't know that.\n";
