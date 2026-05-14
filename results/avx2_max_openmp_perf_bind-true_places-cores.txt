@@ -1,0 +1,96 @@
+=== OMP_NUM_THREADS=1 ===
+
+ Performance counter stats for './mlp_infer_avx2_max --export-dir ../cifar10_embedding_mlp/export --input ../cifar10_embedding_mlp/export/test_input_embeddings_all.bin --batch-size 156':
+
+         811046554      cache-misses              #   13.641 % of all cache refs    
+        5945476329      cache-references                                            
+          37664498      LLC-load-misses           #   32.04% of all LL-cache accesses
+         117539247      LLC-loads                                                   
+
+      23.084072350 seconds time elapsed
+
+      19.094259000 seconds user
+       3.953155000 seconds sys
+
+
+
+=== OMP_NUM_THREADS=2 ===
+
+ Performance counter stats for './mlp_infer_avx2_max --export-dir ../cifar10_embedding_mlp/export --input ../cifar10_embedding_mlp/export/test_input_embeddings_all.bin --batch-size 156':
+
+         875436602      cache-misses              #   14.712 % of all cache refs    
+        5950598671      cache-references                                            
+          33053718      LLC-load-misses           #   26.43% of all LL-cache accesses
+         125047651      LLC-loads                                                   
+
+      15.691466509 seconds time elapsed
+
+      21.225907000 seconds user
+       4.379315000 seconds sys
+
+
+
+=== OMP_NUM_THREADS=4 ===
+
+ Performance counter stats for './mlp_infer_avx2_max --export-dir ../cifar10_embedding_mlp/export --input ../cifar10_embedding_mlp/export/test_input_embeddings_all.bin --batch-size 156':
+
+         669453019      cache-misses              #   11.247 % of all cache refs    
+        5952128674      cache-references                                            
+          30918140      LLC-load-misses           #   22.16% of all LL-cache accesses
+         139496948      LLC-loads                                                   
+
+      13.254772551 seconds time elapsed
+
+      27.652070000 seconds user
+       4.858390000 seconds sys
+
+
+
+=== OMP_NUM_THREADS=8 ===
+
+ Performance counter stats for './mlp_infer_avx2_max --export-dir ../cifar10_embedding_mlp/export --input ../cifar10_embedding_mlp/export/test_input_embeddings_all.bin --batch-size 156':
+
+         466961283      cache-misses              #    7.840 % of all cache refs    
+        5956227651      cache-references                                            
+          24119155      LLC-load-misses           #   11.56% of all LL-cache accesses
+         208695042      LLC-loads                                                   
+
+       9.206291177 seconds time elapsed
+
+      30.848608000 seconds user
+       4.714870000 seconds sys
+
+
+
+=== OMP_NUM_THREADS=16 ===
+
+ Performance counter stats for './mlp_infer_avx2_max --export-dir ../cifar10_embedding_mlp/export --input ../cifar10_embedding_mlp/export/test_input_embeddings_all.bin --batch-size 156':
+
+         437762330      cache-misses              #    7.341 % of all cache refs    
+        5963620175      cache-references                                            
+          22851622      LLC-load-misses           #    8.10% of all LL-cache accesses
+         282256893      LLC-loads                                                   
+
+       8.373284407 seconds time elapsed
+
+      47.933749000 seconds user
+       4.626238000 seconds sys
+
+
+
+=== OMP_NUM_THREADS=32 ===
+
+ Performance counter stats for './mlp_infer_avx2_max --export-dir ../cifar10_embedding_mlp/export --input ../cifar10_embedding_mlp/export/test_input_embeddings_all.bin --batch-size 156':
+
+         412813613      cache-misses              #    6.898 % of all cache refs    
+        5984903359      cache-references                                            
+          22716394      LLC-load-misses           #    5.67% of all LL-cache accesses
+         400964537      LLC-loads                                                   
+
+       8.653114138 seconds time elapsed
+
+      88.676449000 seconds user
+       6.145331000 seconds sys
+
+
+

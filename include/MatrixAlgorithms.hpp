@@ -53,9 +53,10 @@ static void multiply_transposed_rhs_float_dot4_kernel_4_4(
     std::size_t N,
     std::size_t K
 ) {
-    std::size_t i = 0;
+    const std::size_t M_blocked = (M / 4) * 4;
 
-    for (; i + 4 <= M; i += 4) {
+#pragma omp parallel for schedule(static)
+    for (std::size_t i = 0; i < M_blocked; i += 4) {
         const float* __restrict__ x0 = lhs + (i + 0) * K;
         const float* __restrict__ x1 = lhs + (i + 1) * K;
         const float* __restrict__ x2 = lhs + (i + 2) * K;
@@ -156,7 +157,7 @@ static void multiply_transposed_rhs_float_dot4_kernel_4_4(
         }
     }
 
-    for (; i < M; ++i) {
+    for (std::size_t i = M_blocked; i < M; ++i) {
         const float* __restrict__ x = lhs + i * K;
         float* __restrict__ y = out + i * N;
 
@@ -289,6 +290,7 @@ void multiply_transposed_rhs(const Lhs& lhs, const Rhs& rhs, Out& out) {
         const std::size_t rhs_bytes = rhs.rows() * rhs.cols() * sizeof(float);
         const std::size_t out_bytes = out.rows() * out.cols() * sizeof(float);
 
+        // Required before passing pointers as __restrict__ to the dot4 kernel.
         if (
             flatmatrix_detail::byte_ranges_overlap(out_data, out_bytes, lhs_data, lhs_bytes) ||
             flatmatrix_detail::byte_ranges_overlap(out_data, out_bytes, rhs_data, rhs_bytes)
@@ -309,6 +311,7 @@ void multiply_transposed_rhs(const Lhs& lhs, const Rhs& rhs, Out& out) {
     }
 #endif
 
+#pragma omp parallel for schedule(static)
     for (std::size_t i = 0; i < lhs.rows(); ++i) {
         const auto* x = lhs.data() + i * lhs.cols();
         auto* y = out.data() + i * out.cols();
@@ -348,6 +351,7 @@ void add_row_vector(Matrix& matrix, const std::vector<matrix_scalar_t<Matrix>>& 
     }
 #endif
 
+#pragma omp parallel for schedule(static)
     for (std::size_t r = 0; r < matrix.rows(); ++r) {
         T* row = matrix.data() + r * matrix.cols();
 

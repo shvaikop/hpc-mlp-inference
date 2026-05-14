@@ -5,7 +5,6 @@
 #include <random>
 #include <string>
 #include <vector>
-
 #include "FlatMatrix.hpp"
 #include "FlatMatrixView.hpp"
 #include "MatrixAlgorithms.hpp"
@@ -104,14 +103,8 @@ void run_matrix_mul_benchmark_flatmatrix(
 
     auto end = std::chrono::high_resolution_clock::now();
 
-    std::chrono::duration<double, std::milli> elapsed =
-        (end - start) / iterations;
-
-    std::printf(
-        "[%-28s] Average Time: %.3f ms\n",
-        label.c_str(),
-        elapsed.count()
-    );
+    std::chrono::duration<double, std::milli> elapsed = (end - start) / iterations;
+    printf("[%20s] Average Time: %.3f ms\n", label.c_str(), elapsed.count());
 
     prevent_optimize_away(C);
 }
@@ -172,15 +165,9 @@ void run_add_vector_benchmark_flatmatrix(
 
     auto end = std::chrono::high_resolution_clock::now();
 
-    std::chrono::duration<double, std::nano> elapsed =
-        (end - start) / iterations;
-
-    std::printf(
-        "[%-28s] Average Time: %.2f ns\n",
-        label.c_str(),
-        elapsed.count()
-    );
-
+    std::chrono::duration<double, std::nano> elapsed = (end - start) / iterations;
+    printf("[%20s] Average Time: %.2f ns\n", label.c_str(), elapsed.count());
+    
     prevent_optimize_away(A);
 }
 
@@ -235,14 +222,8 @@ void run_relu_benchmark_flatmatrix(
 
     auto end = std::chrono::high_resolution_clock::now();
 
-    std::chrono::duration<double, std::nano> elapsed =
-        (end - start) / iterations;
-
-    std::printf(
-        "[%-28s] Average Time: %.2f ns\n",
-        label.c_str(),
-        elapsed.count()
-    );
+    std::chrono::duration<double, std::nano> elapsed = (end - start) / iterations;
+    printf("[%20s] Average Time: %.2f ns\n", label.c_str(), elapsed.count());
 
     prevent_optimize_away(A);
 }
