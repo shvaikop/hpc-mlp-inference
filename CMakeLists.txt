@@ -116,6 +116,11 @@ if(OpenMP_CXX_FOUND)
     target_compile_options(flat_matrix_benchmark_6_avx_dot4_openmp PRIVATE ${FLAGS_AVX2_MAX})
     target_compile_definitions(flat_matrix_benchmark_6_avx_dot4_openmp PRIVATE FLATMATRIX_USE_DOT4=1)
     target_link_libraries(flat_matrix_benchmark_6_avx_dot4_openmp PRIVATE OpenMP::OpenMP_CXX)
+
+    add_executable(flat_matrix_benchmark_7_avx_dot4_openmp_tiled ${FLAT_MATRIX_BENCHMARK_SOURCE})
+    target_compile_options(flat_matrix_benchmark_7_avx_dot4_openmp_tiled PRIVATE ${FLAGS_AVX2_MAX})
+    target_compile_definitions(flat_matrix_benchmark_7_avx_dot4_openmp_tiled PRIVATE FLATMATRIX_USE_DOT4=1 FLATMATRIX_USE_TILED_OMP=1)
+    target_link_libraries(flat_matrix_benchmark_7_avx_dot4_openmp_tiled PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
 # Tell the compiler where to find your header files
