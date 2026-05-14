@@ -54,6 +54,123 @@ static void multiply_transposed_rhs_float_dot4_kernel_4_4(
     std::size_t K
 ) {
     const std::size_t M_blocked = (M / 4) * 4;
+    const std::size_t N_blocked = (N / 4) * 4;
+
+#ifdef FLATMATRIX_USE_TILED_OMP
+
+#pragma omp parallel for collapse(2) schedule(static)
+    for (std::size_t i = 0; i < M_blocked; i += 4) {
+        for (std::size_t j = 0; j < N_blocked; j += 4) {
+            const float* __restrict__ x0 = lhs + (i + 0) * K;
+            const float* __restrict__ x1 = lhs + (i + 1) * K;
+            const float* __restrict__ x2 = lhs + (i + 2) * K;
+            const float* __restrict__ x3 = lhs + (i + 3) * K;
+
+            float* __restrict__ y0 = out + (i + 0) * N;
+            float* __restrict__ y1 = out + (i + 1) * N;
+            float* __restrict__ y2 = out + (i + 2) * N;
+            float* __restrict__ y3 = out + (i + 3) * N;
+
+            const float* __restrict__ w0 = rhs + (j + 0) * K;
+            const float* __restrict__ w1 = rhs + (j + 1) * K;
+            const float* __restrict__ w2 = rhs + (j + 2) * K;
+            const float* __restrict__ w3 = rhs + (j + 3) * K;
+
+            float s00 = 0.0f, s01 = 0.0f, s02 = 0.0f, s03 = 0.0f;
+            float s10 = 0.0f, s11 = 0.0f, s12 = 0.0f, s13 = 0.0f;
+            float s20 = 0.0f, s21 = 0.0f, s22 = 0.0f, s23 = 0.0f;
+            float s30 = 0.0f, s31 = 0.0f, s32 = 0.0f, s33 = 0.0f;
+
+            for (std::size_t k = 0; k < K; ++k) {
+                const float a0 = x0[k];
+                const float a1 = x1[k];
+                const float a2 = x2[k];
+                const float a3 = x3[k];
+
+                const float b0 = w0[k];
+                const float b1 = w1[k];
+                const float b2 = w2[k];
+                const float b3 = w3[k];
+
+                s00 += a0 * b0;
+                s01 += a0 * b1;
+                s02 += a0 * b2;
+                s03 += a0 * b3;
+
+                s10 += a1 * b0;
+                s11 += a1 * b1;
+                s12 += a1 * b2;
+                s13 += a1 * b3;
+
+                s20 += a2 * b0;
+                s21 += a2 * b1;
+                s22 += a2 * b2;
+                s23 += a2 * b3;
+
+                s30 += a3 * b0;
+                s31 += a3 * b1;
+                s32 += a3 * b2;
+                s33 += a3 * b3;
+            }
+
+            y0[j + 0] = s00;
+            y0[j + 1] = s01;
+            y0[j + 2] = s02;
+            y0[j + 3] = s03;
+
+            y1[j + 0] = s10;
+            y1[j + 1] = s11;
+            y1[j + 2] = s12;
+            y1[j + 3] = s13;
+
+            y2[j + 0] = s20;
+            y2[j + 1] = s21;
+            y2[j + 2] = s22;
+            y2[j + 3] = s23;
+
+            y3[j + 0] = s30;
+            y3[j + 1] = s31;
+            y3[j + 2] = s32;
+            y3[j + 3] = s33;
+        }
+    }
+
+    for (std::size_t i = 0; i < M_blocked; i += 4) {
+        const float* __restrict__ x0 = lhs + (i + 0) * K;
+        const float* __restrict__ x1 = lhs + (i + 1) * K;
+        const float* __restrict__ x2 = lhs + (i + 2) * K;
+        const float* __restrict__ x3 = lhs + (i + 3) * K;
+
+        float* __restrict__ y0 = out + (i + 0) * N;
+        float* __restrict__ y1 = out + (i + 1) * N;
+        float* __restrict__ y2 = out + (i + 2) * N;
+        float* __restrict__ y3 = out + (i + 3) * N;
+
+        for (std::size_t j = N_blocked; j < N; ++j) {
+            const float* __restrict__ w = rhs + j * K;
+
+            float s0 = 0.0f;
+            float s1 = 0.0f;
+            float s2 = 0.0f;
+            float s3 = 0.0f;
+
+            for (std::size_t k = 0; k < K; ++k) {
+                const float b = w[k];
+
+                s0 += x0[k] * b;
+                s1 += x1[k] * b;
+                s2 += x2[k] * b;
+                s3 += x3[k] * b;
+            }
+
+            y0[j] = s0;
+            y1[j] = s1;
+            y2[j] = s2;
+            y3[j] = s3;
+        }
+    }
+
+#else
 
 #pragma omp parallel for schedule(static)
     for (std::size_t i = 0; i < M_blocked; i += 4) {
@@ -156,6 +273,8 @@ static void multiply_transposed_rhs_float_dot4_kernel_4_4(
             y3[j] = s3;
         }
     }
+
+#endif
 
     for (std::size_t i = M_blocked; i < M; ++i) {
         const float* __restrict__ x = lhs + i * K;
