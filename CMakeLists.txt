@@ -29,16 +29,6 @@ if(APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     set(OpenMP_omp_LIBRARY "${LIBOMP_PREFIX}/lib/libomp.dylib")
 endif()
 
-find_package(OpenMP)
-if(OpenMP_CXX_FOUND)
-    message(STATUS "OpenMP found: ${OpenMP_CXX_FLAGS}")
-    link_libraries(OpenMP::OpenMP_CXX)
-else()
-    message(STATUS "OpenMP not found via find_package, trying -fopenmp directly")
-    add_compile_options(-fopenmp)
-    link_libraries(-fopenmp)
-endif()
-
 # x86-specific flags only apply on x86_64. On ARM (Apple Silicon) AVX doesn't exist
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
     set(FLAGS_NO_VEC   -fno-tree-vectorize -mno-avx -mno-avx2)
@@ -135,6 +125,29 @@ target_compile_options(flat_matrix_benchmark_4_native PRIVATE ${FLAGS_NATIVE})
 add_executable(flat_matrix_benchmark_5_avx2_dot4 ${FLAT_MATRIX_BENCHMARK_SOURCE})
 target_compile_options(flat_matrix_benchmark_5_avx2_dot4 PRIVATE ${FLAGS_AVX2_MAX})
 target_compile_definitions(flat_matrix_benchmark_5_avx2_dot4 PRIVATE FLATMATRIX_USE_DOT4=1)
+
+# --- OpenMP executables ---
+find_package(OpenMP)
+if(OpenMP_CXX_FOUND)
+    message(STATUS "OpenMP found: ${OpenMP_CXX_FLAGS}")
+else()
+    message(STATUS "OpenMP not found")
+endif()
+
+if(OpenMP_CXX_FOUND)
+    add_executable(mlp_infer_avx2_max_openmp ${MLP_SOURCES})
+    target_compile_options(mlp_infer_avx2_max_openmp PRIVATE ${FLAGS_AVX2_MAX})
+    target_compile_definitions(mlp_infer_avx2_max_openmp PRIVATE
+            FLATMATRIX_USE_DOT4=1
+            ALLOC_DISABLE_INIT=1
+    )
+    target_link_libraries(mlp_infer_avx2_max_openmp PRIVATE OpenMP::OpenMP_CXX)
+
+    add_executable(flat_matrix_benchmark_6_avx_dot4_openmp ${FLAT_MATRIX_BENCHMARK_SOURCE})
+    target_compile_options(flat_matrix_benchmark_6_avx_dot4_openmp PRIVATE ${FLAGS_AVX2_MAX})
+    target_compile_definitions(flat_matrix_benchmark_6_avx_dot4_openmp PRIVATE FLATMATRIX_USE_DOT4=1)
+    target_link_libraries(flat_matrix_benchmark_6_avx_dot4_openmp PRIVATE OpenMP::OpenMP_CXX)
+endif()
 
 # Tell the compiler where to find your header files
 target_include_directories(mlp_infer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)

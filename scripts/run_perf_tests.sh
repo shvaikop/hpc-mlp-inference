@@ -6,7 +6,7 @@ mkdir -p "$RESULTS_DIR"
 
 THREADS="1 2 4 8 16 32"
 
-BIN="./mlp_infer_avx2_max"
+BIN="./mlp_infer_avx2_max_openmp"
 EXPORT_DIR="../cifar10_embedding_mlp/export"
 INPUT_FILE="../cifar10_embedding_mlp/export/test_input_embeddings_all.bin"
 BATCH_SIZE=156
