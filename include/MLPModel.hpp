@@ -6,6 +6,9 @@
 #include "MatrixConcepts.hpp"
 #include "utils.hpp"
 #include "MatrixAlgorithms.hpp"
+#include "LoggingAllocator.hpp"
+#include "FreeListAllocator.hpp"
+#include "FreeListMemoryPool.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -33,9 +36,18 @@ public:
 
     // Input shape:  [batch_size, input_dim]
     // Output shape: [batch_size, num_classes]
-    std::vector<float> infer_batch(const std::vector<float>& input, std::size_t batch_size, ProfileData& profile_data) const;
+    std::vector<float, FreeListAllocator<float>> infer_batch(
+        const std::vector<float,
+        FreeListAllocator<float>>& input,
+        std::size_t batch_size,
+        FreeListMemoryPool& mem_pool,
+        ProfileData& profile_data) const;
 
-    std::vector<std::int64_t> predict_batch(const std::vector<float>& logits, std::size_t batch_size) const;
+    std::vector<std::int64_t> predict_batch(const std::vector<float, FreeListAllocator<float>>& logits, std::size_t batch_size) const;
+
+    std::size_t estimate_inference_mem_pool_size(
+        std::size_t batch_size
+    ) const;
 
 private:
     std::size_t input_dim_ = 0;
@@ -48,12 +60,13 @@ private:
 
     template <typename MatrixType, typename MatrixViewType>
         requires IMatrix<MatrixType, float> && IMatrix<MatrixViewType, float> && WritableMatrix<MatrixType>
-    static std::vector<float> linear_forward(
-        const std::vector<float>& input,
+    static std::vector<float, FreeListAllocator<float>> linear_forward(
+        const std::vector<float, FreeListAllocator<float>>& input,
         std::size_t batch_size,
         std::size_t input_dim,
         const LinearLayer& layer,
         bool apply_relu,
+        FreeListMemoryPool& mem_pool,
         ProfileData& profile_data
     );
 };
@@ -87,12 +100,13 @@ std::vector<T> MLPModel::read_binary_file(const std::filesystem::path& path) {
 
 template <typename MatrixType, typename MatrixViewType>
     requires IMatrix<MatrixType, float> && IMatrix<MatrixViewType, float> && WritableMatrix<MatrixType>
-std::vector<float> MLPModel::linear_forward(
-    const std::vector<float>& input,
+std::vector<float, FreeListAllocator<float>> MLPModel::linear_forward(
+    const std::vector<float, FreeListAllocator<float>>& input,
     std::size_t batch_size,
     std::size_t input_dim,
     const LinearLayer& layer,
     bool apply_relu_flag,
+    FreeListMemoryPool& mem_pool,
     ProfileData& profile_data
 ) {
     if (input_dim != layer.in_features) {
@@ -111,7 +125,7 @@ std::vector<float> MLPModel::linear_forward(
         throw std::runtime_error("Layer bias size does not match output dimension.");
     }
 
-    std::vector<float> y_buffer(batch_size * layer.out_features);
+    std::vector<float, FreeListAllocator<float>> y_buffer(batch_size * layer.out_features, FreeListAllocator<float>{mem_pool});
 
     profile_data.append_timestamp("Before_matrix_init");
 

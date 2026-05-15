@@ -16,7 +16,7 @@
 #include "MatrixConcepts.hpp"
 #include "FlatMatrixView.hpp"
 
-template <typename T>
+template <typename T, typename Allocator = std::allocator<T>>
 class FlatMatrix {
 public:
     using value_type = T;
@@ -30,7 +30,7 @@ public:
 
     // Copies if called with an lvalue vector.
     // Moves if called with std::move(vector).
-    FlatMatrix(std::size_t rows, std::size_t cols, std::vector<T> data)
+    FlatMatrix(std::size_t rows, std::size_t cols, std::vector<T, Allocator> data)
         : rows_(rows), cols_(cols), data_(std::move(data))
     {
         if (data_.size() != rows * cols) {
@@ -63,12 +63,12 @@ public:
         return data_.data();
     }
 
-    std::vector<T>& vector() noexcept
+    std::vector<T, Allocator>& vector() noexcept
     {
         return data_;
     }
 
-    const std::vector<T>& vector() const noexcept
+    const std::vector<T, Allocator>& vector() const noexcept
     {
         return data_;
     }
@@ -101,9 +101,9 @@ public:
         return FlatMatrixView<const T>(data_.data(), rows_, cols_);
     }
 
-    std::vector<T> take_data()
+    std::vector<T, Allocator> take_data()
     {
-        std::vector<T> stolen_data = std::move(data_);
+        std::vector<T, Allocator> stolen_data = std::move(data_);
 
         rows_ = 0;
         cols_ = 0;
@@ -205,7 +205,7 @@ public:
 private:
     std::size_t rows_ = 0;
     std::size_t cols_ = 0;
-    std::vector<T> data_;
+    std::vector<T, Allocator> data_;
 };
 
 static_assert(IMatrix<FlatMatrix<float>, float>);

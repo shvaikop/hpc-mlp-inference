@@ -51,6 +51,21 @@ target_compile_definitions(mlp_infer_avx2_max PRIVATE
         FLATMATRIX_USE_DOT4=1
 )
 
+# --- 4. AVX2 optimized version with custom memory allocator
+add_executable(mlp_infer_custom_alloc ${MLP_SOURCES})
+target_compile_options(mlp_infer_custom_alloc PRIVATE
+        -O3
+        -mavx2
+        -mfma
+        -ffast-math
+)
+# We enable the DOT4 unrolled logic for the MAX version
+target_compile_definitions(mlp_infer_custom_alloc PRIVATE
+        FLATMATRIX_USE_DOT4=1
+        ALLOC_DISABLE_INIT=1
+)
+
+
 
 set(FLAT_MATRIX_BENCHMARK_SOURCE src/flat_matrix_benchmark.cpp)
 
@@ -59,7 +74,10 @@ set(FLAT_MATRIX_BENCHMARK_SOURCE src/flat_matrix_benchmark.cpp)
 add_executable(flat_matrix_benchmark_0_scalar ${FLAT_MATRIX_BENCHMARK_SOURCE}
         include/utils.hpp
         include/FlatMatrixView.hpp
-        include/MatrixAlgorithms.hpp)
+        include/MatrixAlgorithms.hpp
+        include/LoggingAllocator.hpp
+        include/FreeListAllocator.hpp
+        include/FreeListMemoryPool.hpp)
 target_compile_options(flat_matrix_benchmark_0_scalar PRIVATE
         -O3 -fno-tree-vectorize -mno-avx -mno-avx2)
 

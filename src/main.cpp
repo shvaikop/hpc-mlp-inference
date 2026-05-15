@@ -1,6 +1,9 @@
 #include "MLPModel.hpp"
 #include "CLI11.hpp"
 #include "utils.hpp"
+#include "LoggingAllocator.hpp"
+#include "FreeListMemoryPool.hpp"
+#include "FreeListAllocator.hpp"
 
 #include <optional>
 #include <algorithm>
@@ -90,9 +93,12 @@ int main(int argc, char **argv)
 
     try
     {
+        ProfileData profile_data{};
+        profile_data.append_timestamp("Start");
         // Load the model
         MLPModel model;
         model.load_from_export_dir(cfg.export_dir);
+        profile_data.append_timestamp("Model_loaded");
 
         // Load the input embeddings
         std::vector<float> input = read_float32_file(cfg.input_path);
@@ -101,6 +107,7 @@ int main(int argc, char **argv)
             throw std::runtime_error(
                 "Input file size is not divisible by input_dim=" + std::to_string(model.input_dim()));
         }
+        profile_data.append_timestamp("Input_loaded");
 
         // Calculate the number of samples and batch
         // Lambda is used so that `num_samples` can be marked const and its more readable than with ternary operator
@@ -121,23 +128,28 @@ int main(int argc, char **argv)
         std::cout << "  Total batches: " << cfg.num_batches.value() << "\n";
         std::cout << "================================================================================\n";
 
-        ProfileData profile_data{};
         std::vector<double> batch_times;                                                  
         const std::size_t stride = cfg.batch_size * model.input_dim();
         
         std::vector<float> all_logits;                                                    
         std::vector<std::int64_t> all_preds;
 
+        profile_data.append_timestamp("Before_mem_pool_init");
+        FreeListMemoryPool mem_pool{
+            model.estimate_inference_mem_pool_size(cfg.batch_size) * 5 / 4
+        };
+        profile_data.append_timestamp("After_mem_pool_init");
+
         // Iterate over batches and run inference
         for (std::size_t i = 0; i < cfg.num_batches.value(); ++i) {
             // Create batch input                                                   
             const float* batch_start = input.data() + i * stride;                         
-            const std::vector<float> batch_input(batch_start, batch_start + stride);
+            const std::vector<float, FreeListAllocator<float>> batch_input(batch_start, batch_start + stride, FreeListAllocator<float>{mem_pool});
                                                                                             
             // Calculate the time for each batch inference
             const auto t_start = std::chrono::high_resolution_clock::now();
             profile_data.append_timestamp(std::format("Batch_{}_start", i), t_start);
-            const std::vector<float> logits = model.infer_batch(batch_input, cfg.batch_size, profile_data);
+            const std::vector<float, FreeListAllocator<float>> logits = model.infer_batch(batch_input, cfg.batch_size, mem_pool, profile_data);
             const auto t_end = std::chrono::high_resolution_clock::now();
             profile_data.append_timestamp(std::format("Batch_{}_end", i), t_end);
                                                                                             

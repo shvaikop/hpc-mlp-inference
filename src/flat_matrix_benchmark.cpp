@@ -301,8 +301,8 @@ void benchmark_add_vector(std::size_t M, std::size_t K)
 
     auto vec = MatrixGenerator::generateVec<float>(K, 0.0f, 0.05f, 0.2f);
 
-    run_add_vector_benchmark_flatmatrix("Add vector / FlatMatrix", A1, vec);
     run_add_vector_benchmark_view("Add vector / View", A2, vec);
+    run_add_vector_benchmark_flatmatrix("Add vector / FlatMatrix", A1, vec);
 }
 
 void benchmark_relu(std::size_t M, std::size_t K)
@@ -310,8 +310,8 @@ void benchmark_relu(std::size_t M, std::size_t K)
     auto A1 = MatrixGenerator::generate<float>(M, K, 0.0f, -1.0f, 1.0f);
     auto A2 = A1;
 
-    run_relu_benchmark_flatmatrix("Apply ReLU / FlatMatrix", A1);
     run_relu_benchmark_view("Apply ReLU / View", A2);
+    run_relu_benchmark_flatmatrix("Apply ReLU / FlatMatrix", A1);
 }
 
 int main()
