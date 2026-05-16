@@ -6,7 +6,6 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
-#include <format>
 #include <iostream>
 #include <numeric>
 #include <stdexcept>
@@ -145,19 +144,15 @@ public:
         const double stdev = std::sqrt(std::max(0.0, variance));
 
         std::cout << "--- Matrix Statistics ---\n";
-        std::cout << std::format("{:<15} : {} x {}\n", "Dimensions", rows_, cols_);
-        std::cout << std::format("{:<15} : {:.2f}%\n", "Density", density * 100.0);
-        std::cout << std::format("{:<15} : {:.2f}%\n", "Sparsity", sparsity * 100.0);
+        std::cout << "Dimensions: " << rows_ << " x " << cols_ << '\n';
+        std::cout << "Density: " << density * 100.0 << "%\n";
+        std::cout << "Sparsity: " << sparsity * 100.0 << "%\n";
 
         std::cout << "\n--- Value Distribution ---\n";
-        std::cout << std::format("{:<10} {:>10} {:>10} {:>10}\n",
-                                 "Min", "Max", "Mean", "StdDev");
-
-        std::cout << std::format("{:<10.4f} {:>10.4f} {:>10.4f} {:>10.4f}\n",
-                                 static_cast<double>(min_val),
-                                 static_cast<double>(max_val),
-                                 mean,
-                                 stdev);
+        std::cout << "Min: " << min_val << '\n';
+        std::cout << "Max: " << max_val << '\n';
+        std::cout << "Mean: " << mean << '\n';
+        std::cout << "StdDev: " << stdev << '\n';
 
         std::cout << "\n--- Range Spread ---\n";
 
@@ -189,11 +184,9 @@ public:
 
                 std::string bar(histogram[i] * 20 / total_elements, '#');
 
-                std::cout << std::format("[{:>7.2f}, {:>7.2f}]: {:<5} {}\n",
-                                         lower,
-                                         upper,
-                                         histogram[i],
-                                         bar);
+                std::cout << "[" << lower << ", " << upper << "]: "
+                  << histogram[i] << " "
+                  << bar << '\n';
             }
         } else {
             std::cout << "All values are identical.\n";

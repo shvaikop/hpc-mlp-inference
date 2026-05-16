@@ -8,7 +8,6 @@
 
 #include <algorithm>
 #include <stdexcept>
-#include <format>
 
 #include "FreeListMemoryPool.hpp"
 
@@ -106,7 +105,9 @@ std::vector<float, FreeListAllocator<float>> MLPModel::infer_batch(
     std::size_t current_dim = input_dim_;
 
     for (std::size_t layer_idx = 0; layer_idx < layers_.size(); ++layer_idx) {
-        profile_data.append_timestamp(std::format("Layer_{}_start", layer_idx));
+        profile_data.append_timestamp(
+            "Layer_" + std::to_string(layer_idx) + "_start"
+        );
         const bool apply_relu = (layer_idx + 1 != layers_.size());
         auto next_activations = linear_forward<FlatMatrix<float, FreeListAllocator<float>>, FlatMatrixView<const float>>(
             layer_idx == 0 ? input : activations,
@@ -118,15 +119,15 @@ std::vector<float, FreeListAllocator<float>> MLPModel::infer_batch(
             profile_data
         );
 
-        profile_data.append_timestamp(std::format("Layer_{}_after_return", layer_idx));
+        profile_data.append_timestamp("Layer_" + std::to_string(layer_idx) + "_after_return");
 
         activations = std::move(next_activations);
 
-        profile_data.append_timestamp(std::format("Layer_{}_after_move_assign", layer_idx));
+        profile_data.append_timestamp("Layer_" + std::to_string(layer_idx) + "_after_move_assign");
 
         current_dim = layers_[layer_idx].out_features;
 
-        profile_data.append_timestamp(std::format("Layer_{}_end", layer_idx));
+        profile_data.append_timestamp("Layer_" + std::to_string(layer_idx) + "_end");
     }
 
     return activations;

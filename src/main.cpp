@@ -13,7 +13,6 @@
 #include <chrono>
 #include <numeric>
 #include <cmath>
-#include <format>
 
 namespace fs = std::filesystem;
 
@@ -148,10 +147,10 @@ int main(int argc, char **argv)
                                                                                             
             // Calculate the time for each batch inference
             const auto t_start = std::chrono::high_resolution_clock::now();
-            profile_data.append_timestamp(std::format("Batch_{}_start", i), t_start);
+            profile_data.append_timestamp("Batch_" + std::to_string(i) + "_start", t_start);
             const std::vector<float, FreeListAllocator<float>> logits = model.infer_batch(batch_input, cfg.batch_size, mem_pool, profile_data);
             const auto t_end = std::chrono::high_resolution_clock::now();
-            profile_data.append_timestamp(std::format("Batch_{}_end", i), t_end);
+            profile_data.append_timestamp("Batch_" + std::to_string(i) + "_end", t_end);
                                                                                             
             batch_times.push_back(std::chrono::duration<double, std::milli>(t_end - t_start).count());
 

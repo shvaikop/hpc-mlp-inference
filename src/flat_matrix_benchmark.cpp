@@ -1,6 +1,6 @@
 #include <algorithm>
 #include <chrono>
-#include <format>
+#include <cstdio>
 #include <iostream>
 #include <random>
 #include <string>
@@ -107,9 +107,9 @@ void run_matrix_mul_benchmark_flatmatrix(
     std::chrono::duration<double, std::milli> elapsed =
         (end - start) / iterations;
 
-    std::cout << std::format(
-        "[{:^28}] Average Time: {:.3f} ms\n",
-        label,
+    std::printf(
+        "[%-28s] Average Time: %.3f ms\n",
+        label.c_str(),
         elapsed.count()
     );
 
@@ -144,9 +144,9 @@ void run_matrix_mul_benchmark_view(
     std::chrono::duration<double, std::milli> elapsed =
         (end - start) / iterations;
 
-    std::cout << std::format(
-        "[{:^28}] Average Time: {:.3f} ms\n",
-        label,
+    std::printf(
+        "[%-28s] Average Time: %.3f ms\n",
+        label.c_str(),
         elapsed.count()
     );
 
@@ -175,9 +175,9 @@ void run_add_vector_benchmark_flatmatrix(
     std::chrono::duration<double, std::nano> elapsed =
         (end - start) / iterations;
 
-    std::cout << std::format(
-        "[{:^28}] Average Time: {:.2f} ns\n",
-        label,
+    std::printf(
+        "[%-28s] Average Time: %.2f ns\n",
+        label.c_str(),
         elapsed.count()
     );
 
@@ -208,9 +208,9 @@ void run_add_vector_benchmark_view(
     std::chrono::duration<double, std::nano> elapsed =
         (end - start) / iterations;
 
-    std::cout << std::format(
-        "[{:^28}] Average Time: {:.2f} ns\n",
-        label,
+    std::printf(
+        "[%-28s] Average Time: %.2f ns\n",
+        label.c_str(),
         elapsed.count()
     );
 
@@ -238,9 +238,9 @@ void run_relu_benchmark_flatmatrix(
     std::chrono::duration<double, std::nano> elapsed =
         (end - start) / iterations;
 
-    std::cout << std::format(
-        "[{:^28}] Average Time: {:.2f} ns\n",
-        label,
+    std::printf(
+        "[%-28s] Average Time: %.2f ns\n",
+        label.c_str(),
         elapsed.count()
     );
 
@@ -270,9 +270,9 @@ void run_relu_benchmark_view(
     std::chrono::duration<double, std::nano> elapsed =
         (end - start) / iterations;
 
-    std::cout << std::format(
-        "[{:^28}] Average Time: {:.2f} ns\n",
-        label,
+    std::printf(
+        "[%-28s] Average Time: %.2f ns\n",
+        label.c_str(),
         elapsed.count()
     );
 
