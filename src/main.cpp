@@ -249,8 +249,8 @@ int main(int argc, char **argv)
             const double std_ms = std::sqrt(variance / total_batches);
 
 #ifdef USE_MPI
-            // Wall time = each rank's share; ranks run in parallel
-            const double throughput = static_cast<double>(total_batches * cfg.batch_size) / (batches_per_process * mean_ms / 1000.0);
+            // Throughput = all ranks process in parallel, wall time = mean latency per batch
+            const double throughput = static_cast<double>(mpi_size * cfg.batch_size) / (mean_ms / 1000.0);
 #else
             const double throughput = cfg.batch_size / (mean_ms / 1000.0);
 #endif
