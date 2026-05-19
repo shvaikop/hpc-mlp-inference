@@ -1,0 +1,6 @@
+1. Rach Rank read its data instead of rank 0 read all data and distribute it
+
+2. Unnessary memory copy: (main.cpp: 153)
+   
+3. Through compute (main.cpp:206)
+4. 

@@ -26,3 +26,6 @@ mlp_infer
 
 # Ignore build directory
 build/
+
+# Ignore Claude's files
+CLAUDE.*

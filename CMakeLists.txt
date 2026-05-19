@@ -162,5 +162,25 @@ if(OpenMP_CXX_FOUND)
     target_link_libraries(flat_matrix_benchmark_7_avx_dot4_openmp_tiled PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
+# --- MPI target ---
+find_package(MPI)
+if(MPI_CXX_FOUND)
+    message(STATUS "MPI found: ${MPI_CXX_COMPILER}")
+    add_executable(mlp_infer_mpi ${MLP_SOURCES})
+    target_compile_options(mlp_infer_mpi PRIVATE ${FLAGS_AVX2_MAX})
+    target_compile_definitions(mlp_infer_mpi PRIVATE
+            FLATMATRIX_USE_DOT4=1
+            ALLOC_DISABLE_INIT=1
+            FLATMATRIX_USE_TILED_OMP=1
+            USE_MPI=1
+    )
+    target_link_libraries(mlp_infer_mpi PRIVATE MPI::MPI_CXX)
+    if(OpenMP_CXX_FOUND)
+        target_link_libraries(mlp_infer_mpi PRIVATE OpenMP::OpenMP_CXX)
+    endif()
+else()
+    message(STATUS "MPI not found, skipping mlp_infer_mpi target")
+endif()
+
 # Tell the compiler where to find your header files
 target_include_directories(mlp_infer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
