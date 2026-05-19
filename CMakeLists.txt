@@ -184,3 +184,22 @@ endif()
 
 # Tell the compiler where to find your header files
 target_include_directories(mlp_infer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+# --- CUDA target ---
+find_package(CUDAToolkit QUIET)
+if(CUDAToolkit_FOUND)
+    message(STATUS "CUDA found: ${CUDAToolkit_VERSION}")
+    enable_language(CUDA)
+    add_executable(mlp_infer_cuda
+        src/main_cuda.cpp
+        src/cuda_backend.cu
+    )
+    set_target_properties(mlp_infer_cuda PROPERTIES
+        CUDA_ARCHITECTURES "90"
+    )
+    target_include_directories(mlp_infer_cuda PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    target_compile_features(mlp_infer_cuda PRIVATE cxx_std_20)
+    target_link_libraries(mlp_infer_cuda PRIVATE CUDA::cublas)
+else()
+    message(STATUS "CUDA not found, skipping mlp_infer_cuda target")
+endif()
