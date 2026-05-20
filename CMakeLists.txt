@@ -204,6 +204,7 @@ if(CUDAToolkit_FOUND)
     target_include_directories(mlp_infer_cuda PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CUBLAS_INCLUDE}
+        ${CUDAToolkit_INCLUDE_DIRS}
     )
     target_link_libraries(mlp_infer_cuda PRIVATE
         ${CUBLAS_LIB_DIR}/libcublas.so.12
