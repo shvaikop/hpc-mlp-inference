@@ -186,7 +186,7 @@ endif()
 target_include_directories(mlp_infer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # --- CUDA target ---
-find_package(CUDAToolkit QUIET)
+find_package(CUDAToolkit)
 if(CUDAToolkit_FOUND)
     message(STATUS "CUDA found: ${CUDAToolkit_VERSION}")
     enable_language(CUDA)
@@ -196,9 +196,10 @@ if(CUDAToolkit_FOUND)
     )
     set_target_properties(mlp_infer_cuda PROPERTIES
         CUDA_ARCHITECTURES "90"
+        CUDA_STANDARD 17
+        CXX_STANDARD 17
     )
     target_include_directories(mlp_infer_cuda PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-    target_compile_features(mlp_infer_cuda PRIVATE cxx_std_20)
     target_link_libraries(mlp_infer_cuda PRIVATE CUDA::cublas)
 else()
     message(STATUS "CUDA not found, skipping mlp_infer_cuda target")
