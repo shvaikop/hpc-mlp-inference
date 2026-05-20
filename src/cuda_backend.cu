@@ -196,7 +196,7 @@ void CudaMLPModel::infer_batch(
                           cudaMemcpyHostToDevice));
 
     const float alpha = 1.0f, beta = 0.0f;
-    const bool last_layer_idx = layers_.size() - 1;
+    const std::size_t last_layer_idx = layers_.size() - 1;
 
     for (std::size_t li = 0; li < layers_.size(); ++li) {
         const auto& layer = layers_[li];
@@ -232,8 +232,8 @@ void CudaMLPModel::infer_batch(
         CUDA_CHECK(cudaGetLastError());
     }
 
-    // Copy result back to CPU
-    const int output_buf = layers_.size() % 2;
+    // Copy result back to CPU: last layer wrote into d_buf[(last_layer_idx + 1) % 2]
+    const int output_buf = static_cast<int>((last_layer_idx + 1) % 2);
     CUDA_CHECK(cudaMemcpy(h_output, d_buf[output_buf],
                           batch_size * num_classes_ * sizeof(float),
                           cudaMemcpyDeviceToHost));
