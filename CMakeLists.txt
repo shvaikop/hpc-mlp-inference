@@ -199,9 +199,15 @@ if(CUDAToolkit_FOUND)
         CUDA_STANDARD 17
         CXX_STANDARD 17
     )
-    target_include_directories(mlp_infer_cuda PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-    find_library(CUBLAS_LIB cublas HINTS ${CUDAToolkit_LIBRARY_DIR} /usr/local/cuda/lib64)
-    target_link_libraries(mlp_infer_cuda PRIVATE ${CUBLAS_LIB})
+    set(CUBLAS_INCLUDE "/opt/conda/lib/python3.11/site-packages/nvidia/cublas/include")
+    set(CUBLAS_LIB_DIR "/opt/conda/lib/python3.11/site-packages/nvidia/cublas/lib")
+    target_include_directories(mlp_infer_cuda PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CUBLAS_INCLUDE}
+    )
+    target_link_libraries(mlp_infer_cuda PRIVATE
+        ${CUBLAS_LIB_DIR}/libcublas.so.12
+    )
 else()
     message(STATUS "CUDA not found, skipping mlp_infer_cuda target")
 endif()
