@@ -1,26 +1,21 @@
 #!/bin/bash
-#SBATCH -A edu26.dd2356             # Your KTH project account
-#SBATCH -J mlp_infer                # Job name
-#SBATCH -p main                     # CPU partition on Dardel
-#SBATCH -N 1                        # Request 1 node
-#SBATCH --ntasks=16                  # 1 MPI rank
-#SBATCH --cpus-per-task=8          # 128 cores per rank (1x128=128)
-#SBATCH -t 00:10:00                 # Time limit (10 minutes)
+#SBATCH -A edu26.dd2356
+#SBATCH -J mlp_strong_scaling
+#SBATCH -p main
+#SBATCH -N 2                    # 改这里: 1, 2, 4, 8
+#SBATCH --ntasks-per-node=1     # 每节点 1 个 MPI rank
+#SBATCH --cpus-per-task=128     # 每 rank 用满整个节点 (128核)
+#SBATCH -t 00:10:00
 
-# Swap from the default Cray environment to the GNU environment
-module swap PrgEnv-cray PrgEnv-gnu
-
-# Set the number of OpenMP threads to match the requested CPUs per task
-export OMP_NUM_THREADS=8
-
-# Recommended OpenMP thread binding settings on Dardel to prevent core contention
+export OMP_NUM_THREADS=128
 export OMP_PLACES=cores
 export OMP_PROC_BIND=close
 
-# WARNING: Ensure there are NO trailing spaces after the backslashes (\) below
-# Added --cpu-bind=cores so Slurm maps the MPI ranks correctly to the physical cores
+cd /cfs/klemming/home/s/shvaiko/hpc-mlp-inference
+
 srun --cpu-bind=cores ./build/mlp_infer_mpi \
   --export-dir cifar10_embedding_mlp/export \
   --input cifar10_embedding_mlp/export/test_input_embeddings_all.bin \
   --batch-size 128 \
+  --num-batches 64 \
   --quiet
