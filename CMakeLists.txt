@@ -126,6 +126,18 @@ add_executable(flat_matrix_benchmark_5_avx2_dot4 ${FLAT_MATRIX_BENCHMARK_SOURCE}
 target_compile_options(flat_matrix_benchmark_5_avx2_dot4 PRIVATE ${FLAGS_AVX2_MAX})
 target_compile_definitions(flat_matrix_benchmark_5_avx2_dot4 PRIVATE FLATMATRIX_USE_DOT4=1)
 
+add_executable(flat_matrix_benchmark_5_avx2_kernel_2_4 ${FLAT_MATRIX_BENCHMARK_SOURCE})
+target_compile_options(flat_matrix_benchmark_5_avx2_kernel_2_4 PRIVATE ${FLAGS_AVX2_MAX})
+target_compile_definitions(flat_matrix_benchmark_5_avx2_kernel_2_4 PRIVATE FLATMATRIX_USE_KERNEL_2_4=1)
+
+add_executable(flat_matrix_benchmark_5_avx2_kernel_3_4 ${FLAT_MATRIX_BENCHMARK_SOURCE})
+target_compile_options(flat_matrix_benchmark_5_avx2_kernel_3_4 PRIVATE ${FLAGS_AVX2_MAX})
+target_compile_definitions(flat_matrix_benchmark_5_avx2_kernel_3_4 PRIVATE FLATMATRIX_USE_KERNEL_3_4=1)
+
+add_executable(flat_matrix_benchmark_5_avx2_kernel_6_4 ${FLAT_MATRIX_BENCHMARK_SOURCE})
+target_compile_options(flat_matrix_benchmark_5_avx2_kernel_6_4 PRIVATE ${FLAGS_AVX2_MAX})
+target_compile_definitions(flat_matrix_benchmark_5_avx2_kernel_6_4 PRIVATE FLATMATRIX_USE_KERNEL_6_4=1)
+
 # --- OpenMP executables ---
 find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
