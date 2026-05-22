@@ -295,9 +295,9 @@ void benchmark_relu(std::size_t M, std::size_t K)
     run_relu_benchmark_flatmatrix("Apply ReLU / FlatMatrix", A1);
 }
 
-int main()
+int main(int argc, char** argv)
 {
-    const std::size_t M = 16;
+    const std::size_t M = argc > 1 ? std::stoul(argv[1]) : 16;
     const std::size_t K = 4096;
     const std::size_t N = 4096;
 

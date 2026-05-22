@@ -1,0 +1,15 @@
+Starting FlatMatrix / FlatMatrixView Benchmarks...
+M = 256, K = 4096, N = 4096
+----------------------------------------------------------
+[Dense x Sparse / FlatMatrix] Average Time: 17.669 ms
+[Dense x Sparse / View       ] Average Time: 20.477 ms
+[Sparse x Dense / FlatMatrix] Average Time: 14.629 ms
+[Sparse x Dense / View       ] Average Time: 15.124 ms
+[Sparse x Sparse / FlatMatrix] Average Time: 15.613 ms
+[Sparse x Sparse / View      ] Average Time: 16.318 ms
+[Dense x Dense / FlatMatrix] Average Time: 14.968 ms
+[Dense x Dense / View        ] Average Time: 15.246 ms
+[Add vector / View           ] Average Time: 147662.00 ns
+[Add vector / FlatMatrix] Average Time: 145919.00 ns
+[Apply ReLU / View           ] Average Time: 150095.00 ns
+[Apply ReLU / FlatMatrix] Average Time: 147251.00 ns

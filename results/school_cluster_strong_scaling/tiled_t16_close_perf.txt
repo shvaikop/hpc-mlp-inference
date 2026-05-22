@@ -1,0 +1,28 @@
+# started on Fri May 22 12:15:40 2026
+
+
+ Performance counter stats for './flat_matrix_benchmark_7_avx_dot4_openmp_tiled':
+
+           4863.26 msec task-clock                #    5.265 CPUs utilized          
+       16815607830      cycles                    #    3.458 GHz                      (41.34%)
+       24759969467      instructions              #    1.47  insn per cycle           (48.92%)
+        1615584977      branches                  #  332.202 M/sec                    (56.67%)
+           3562886      branch-misses             #    0.22% of all branches          (56.12%)
+         852309718      cache-references          #  175.255 M/sec                    (56.44%)
+          17054415      cache-misses              #    2.001 % of all cache refs      (59.74%)
+       15158908697      L1-dcache-loads           #    3.117 G/sec                    (59.65%)
+         468593672      L1-dcache-load-misses     #    3.09% of all L1-dcache accesses  (60.08%)
+           9831550      LLC-loads                 #    2.022 M/sec                    (60.72%)
+            422929      LLC-load-misses           #    4.30% of all LL-cache accesses  (61.16%)
+       16132098104      dTLB-loads                #    3.317 G/sec                    (34.77%)
+           3347095      dTLB-load-misses          #    0.02% of all dTLB cache accesses  (33.58%)
+             66269      page-faults               #   13.626 K/sec                  
+               106      context-switches          #   21.796 /sec                   
+                23      cpu-migrations            #    4.729 /sec                   
+
+       0.923694150 seconds time elapsed
+
+       4.743506000 seconds user
+       0.123259000 seconds sys
+
+

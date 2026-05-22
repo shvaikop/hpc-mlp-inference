@@ -1,0 +1,28 @@
+# started on Fri May 22 12:16:11 2026
+
+
+ Performance counter stats for './flat_matrix_benchmark_5_avx2_dot4 16':
+
+           3253.09 msec task-clock                #    1.000 CPUs utilized          
+       11093306476      cycles                    #    3.410 GHz                      (41.47%)
+       19343942565      instructions              #    1.74  insn per cycle           (49.83%)
+        1384856481      branches                  #  425.705 M/sec                    (58.19%)
+           3239368      branch-misses             #    0.23% of all branches          (58.19%)
+         850731385      cache-references          #  261.515 M/sec                    (58.28%)
+          84201054      cache-misses              #    9.897 % of all cache refs      (58.40%)
+       10763560734      L1-dcache-loads           #    3.309 G/sec                    (58.53%)
+         524369481      L1-dcache-load-misses     #    4.87% of all L1-dcache accesses  (58.53%)
+           9862350      LLC-loads                 #    3.032 M/sec                    (58.53%)
+           2505683      LLC-load-misses           #   25.41% of all LL-cache accesses  (58.44%)
+       10695786947      dTLB-loads                #    3.288 G/sec                    (33.24%)
+           3221871      dTLB-load-misses          #    0.03% of all dTLB cache accesses  (33.11%)
+             74489      page-faults               #   22.898 K/sec                  
+                 7      context-switches          #    2.152 /sec                   
+                 3      cpu-migrations            #    0.922 /sec                   
+
+       3.253477522 seconds time elapsed
+
+       3.097904000 seconds user
+       0.155894000 seconds sys
+
+

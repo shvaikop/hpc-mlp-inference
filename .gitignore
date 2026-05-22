@@ -14,9 +14,9 @@ data/
 *.bin
 
 # Ignore all .txt files
-*.txt
-!results/
-!results/*.txt
+# *.txt
+# !results/
+# !results/*.txt
 
 # Except for CMakeLists.txt
 !CMakeLists.txt
