@@ -55,6 +55,9 @@ add_executable(mlp_infer ${MLP_SOURCES})
 add_executable(mlp_infer_no_opt ${MLP_SOURCES})
 target_compile_options(mlp_infer_no_opt PRIVATE ${FLAGS_NO_VEC})
 
+add_executable(mlp_infer_native ${MLP_SOURCES})
+target_compile_options(mlp_infer_native PRIVATE ${FLAGS_NATIVE})
+
 # --- 3. The "Ceiling": AVX2 Max ---
 # This uses everything the compiler has: native tuning and OpenMP SIMD hints.
 add_executable(mlp_infer_avx2_max ${MLP_SOURCES})
@@ -66,12 +69,7 @@ target_compile_definitions(mlp_infer_avx2_max PRIVATE
 
 # --- 4. AVX2 optimized version with custom memory allocator
 add_executable(mlp_infer_custom_alloc ${MLP_SOURCES})
-target_compile_options(mlp_infer_custom_alloc PRIVATE
-        -O3
-        -mavx2
-        -mfma
-        -ffast-math
-)
+target_compile_options(mlp_infer_custom_alloc PRIVATE ${FLAGS_AVX2_MAX})
 # We enable the DOT4 unrolled logic for the MAX version
 target_compile_definitions(mlp_infer_custom_alloc PRIVATE
         FLATMATRIX_USE_DOT4=1

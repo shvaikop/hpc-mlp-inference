@@ -271,7 +271,7 @@ void benchmark_matrix_mul_pair(
     auto A = MatrixGenerator::generate<float>(M, K, sparsity_A, -1.0f, 1.0f);
     auto B = MatrixGenerator::generate<float>(N, K, sparsity_B, -1.0f, 1.0f);
 
-    run_matrix_mul_benchmark_flatmatrix(label + " / FlatMatrix", A, B);
+    // run_matrix_mul_benchmark_flatmatrix(label + " / FlatMatrix", A, B);
     run_matrix_mul_benchmark_view(label + " / View", A, B);
 }
 
@@ -305,14 +305,14 @@ int main()
     std::cout << "M = " << M << ", K = " << K << ", N = " << N << '\n';
     std::cout << "----------------------------------------------------------\n";
 
-    benchmark_matrix_mul_pair(
-        "Dense x Sparse",
-        M,
-        K,
-        N,
-        0.0f,
-        0.95f
-    );
+    // benchmark_matrix_mul_pair(
+    //     "Dense x Sparse",
+    //     M,
+    //     K,
+    //     N,
+    //     0.0f,
+    //     0.95f
+    // );
 
     benchmark_matrix_mul_pair(
         "Sparse x Dense",
@@ -323,23 +323,23 @@ int main()
         0.0f
     );
 
-    benchmark_matrix_mul_pair(
-        "Sparse x Sparse",
-        M,
-        K,
-        N,
-        0.95f,
-        0.95f
-    );
-
-    benchmark_matrix_mul_pair(
-        "Dense x Dense",
-        M,
-        K,
-        N,
-        0.0f,
-        0.0f
-    );
+    // benchmark_matrix_mul_pair(
+    //     "Sparse x Sparse",
+    //     M,
+    //     K,
+    //     N,
+    //     0.95f,
+    //     0.95f
+    // );
+    //
+    // benchmark_matrix_mul_pair(
+    //     "Dense x Dense",
+    //     M,
+    //     K,
+    //     N,
+    //     0.0f,
+    //     0.0f
+    // );
 
     benchmark_add_vector(M, K);
     benchmark_relu(M, K);
