@@ -76,6 +76,13 @@ target_compile_definitions(mlp_infer_custom_alloc PRIVATE
         ALLOC_DISABLE_INIT=1
 )
 
+add_executable(mlp_infer_custom_alloc_no_opt ${MLP_SOURCES})
+target_compile_options(mlp_infer_custom_alloc_no_opt PRIVATE ${FLAGS_NO_VEC})
+# We enable the DOT4 unrolled logic for the MAX version
+target_compile_definitions(mlp_infer_custom_alloc_no_opt PRIVATE
+        ALLOC_DISABLE_INIT=1
+)
+
 
 
 set(FLAT_MATRIX_BENCHMARK_SOURCE src/flat_matrix_benchmark.cpp)
