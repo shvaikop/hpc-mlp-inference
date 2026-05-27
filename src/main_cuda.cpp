@@ -75,6 +75,7 @@ int main(int argc, char** argv)
     CLI11_PARSE(app, argc, argv);
 
     try {
+
         // Load model — weights are uploaded to GPU here
         CudaMLPModel model;
         model.load_from_export_dir(cfg.export_dir);
@@ -111,7 +112,9 @@ int main(int argc, char** argv)
             const float* batch_start = input.data() + i * stride;
 
             const auto t_start = std::chrono::high_resolution_clock::now();
+            // Run inference for the batch, results go into logits_buf
             model.infer_batch(batch_start, logits_buf.data(), cfg.batch_size);
+
             const auto t_end = std::chrono::high_resolution_clock::now();
 
             const double ms = std::chrono::duration<double, std::milli>(t_end - t_start).count();
