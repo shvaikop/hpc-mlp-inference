@@ -1,0 +1,196 @@
+================================================================================
+  Input dim    : 512
+  Num classes  : 10
+  Batch size   : 128
+  Total samples: 8192
+  Total batches: 64
+  MPI ranks    : 16
+  Batches/rank : 4
+================================================================================
+================================================================================
+  Benchmark Results (MPI, 16 ranks)
+
+--- Full Inference Profile ---
+Step                      |      Elapsed |     Step Dur
+-------------------------------------------------------
+Start                     |          0 us |          0 us
+Model_loaded              |     624261 us |     624261 us
+Input_loaded              |     688121 us |      63859 us
+Before_mem_pool_init      |     691477 us |       3356 us
+After_mem_pool_init       |     691508 us |         30 us
+Batch_0_start             |     691625 us |        116 us
+Layer_0_start             |     691662 us |         36 us
+Before_matrix_init        |     691818 us |        156 us
+Middle_matrix_init        |     691832 us |         13 us
+After_matrix_init         |     691833 us |          0 us
+After_matrix_mul          |     723485 us |      31651 us
+After_matrix_add          |     723707 us |        222 us
+After_matrix_relu         |     723755 us |         47 us
+Layer_0_after_return      |     723756 us |          1 us
+Layer_0_after_move_assign |     723819 us |         63 us
+Layer_0_end               |     723820 us |          0 us
+Layer_1_start             |     723821 us |          1 us
+Before_matrix_init        |     723984 us |        163 us
+Middle_matrix_init        |     723984 us |          0 us
+After_matrix_init         |     723984 us |          0 us
+After_matrix_mul          |     738019 us |      14034 us
+After_matrix_add          |     738208 us |        189 us
+After_matrix_relu         |     738256 us |         48 us
+Layer_1_after_return      |     738258 us |          1 us
+Layer_1_after_move_assign |     738259 us |          0 us
+Layer_1_end               |     738260 us |          0 us
+Layer_2_start             |     738260 us |          0 us
+Before_matrix_init        |     738261 us |          1 us
+Middle_matrix_init        |     738262 us |          0 us
+After_matrix_init         |     738263 us |          0 us
+After_matrix_mul          |     751843 us |      13580 us
+After_matrix_add          |     752097 us |        253 us
+After_matrix_relu         |     752130 us |         33 us
+Layer_2_after_return      |     752133 us |          3 us
+Layer_2_after_move_assign |     752134 us |          1 us
+Layer_2_end               |     752135 us |          0 us
+Layer_3_start             |     752135 us |          0 us
+Before_matrix_init        |     752136 us |          0 us
+Middle_matrix_init        |     752136 us |          0 us
+After_matrix_init         |     752137 us |          0 us
+After_matrix_mul          |     752462 us |        324 us
+After_matrix_add          |     752462 us |          0 us
+After_matrix_relu         |     752462 us |          0 us
+Layer_3_after_return      |     752463 us |          0 us
+Layer_3_after_move_assign |     752463 us |          0 us
+Layer_3_end               |     752463 us |          0 us
+Batch_0_end               |     752464 us |          0 us
+Batch_1_start             |     752579 us |        114 us
+Layer_0_start             |     752580 us |          1 us
+Before_matrix_init        |     752580 us |          0 us
+Middle_matrix_init        |     752580 us |          0 us
+After_matrix_init         |     752581 us |          0 us
+After_matrix_mul          |     754352 us |       1771 us
+After_matrix_add          |     754672 us |        319 us
+After_matrix_relu         |     754716 us |         43 us
+Layer_0_after_return      |     754716 us |          0 us
+Layer_0_after_move_assign |     754716 us |          0 us
+Layer_0_end               |     754716 us |          0 us
+Layer_1_start             |     754717 us |          0 us
+Before_matrix_init        |     754717 us |          0 us
+Middle_matrix_init        |     754718 us |          1 us
+After_matrix_init         |     754718 us |          0 us
+After_matrix_mul          |     768490 us |      13771 us
+After_matrix_add          |     768670 us |        180 us
+After_matrix_relu         |     768718 us |         47 us
+Layer_1_after_return      |     768733 us |         14 us
+Layer_1_after_move_assign |     768733 us |          0 us
+Layer_1_end               |     768733 us |          0 us
+Layer_2_start             |     768734 us |          0 us
+Before_matrix_init        |     768735 us |          1 us
+Middle_matrix_init        |     768735 us |          0 us
+After_matrix_init         |     768736 us |          0 us
+After_matrix_mul          |     782468 us |      13732 us
+After_matrix_add          |     782657 us |        189 us
+After_matrix_relu         |     782690 us |         32 us
+Layer_2_after_return      |     782693 us |          2 us
+Layer_2_after_move_assign |     782693 us |          0 us
+Layer_2_end               |     782694 us |          0 us
+Layer_3_start             |     782694 us |          0 us
+Before_matrix_init        |     782695 us |          0 us
+Middle_matrix_init        |     782695 us |          0 us
+After_matrix_init         |     782695 us |          0 us
+After_matrix_mul          |     782997 us |        301 us
+After_matrix_add          |     782998 us |          0 us
+After_matrix_relu         |     782998 us |          0 us
+Layer_3_after_return      |     782998 us |          0 us
+Layer_3_after_move_assign |     782998 us |          0 us
+Layer_3_end               |     782998 us |          0 us
+Batch_1_end               |     782999 us |          0 us
+Batch_2_start             |     783045 us |         45 us
+Layer_0_start             |     783046 us |          1 us
+Before_matrix_init        |     783046 us |          0 us
+Middle_matrix_init        |     783047 us |          0 us
+After_matrix_init         |     783047 us |          0 us
+After_matrix_mul          |     784728 us |       1681 us
+After_matrix_add          |     785194 us |        465 us
+After_matrix_relu         |     785250 us |         56 us
+Layer_0_after_return      |     785250 us |          0 us
+Layer_0_after_move_assign |     785250 us |          0 us
+Layer_0_end               |     785250 us |          0 us
+Layer_1_start             |     785250 us |          0 us
+Before_matrix_init        |     785250 us |          0 us
+Middle_matrix_init        |     785250 us |          0 us
+After_matrix_init         |     785250 us |          0 us
+After_matrix_mul          |     798979 us |      13728 us
+After_matrix_add          |     799156 us |        177 us
+After_matrix_relu         |     799204 us |         47 us
+Layer_1_after_return      |     799205 us |          1 us
+Layer_1_after_move_assign |     799206 us |          1 us
+Layer_1_end               |     799207 us |          0 us
+Layer_2_start             |     799207 us |          0 us
+Before_matrix_init        |     799208 us |          0 us
+Middle_matrix_init        |     799208 us |          0 us
+After_matrix_init         |     799208 us |          0 us
+After_matrix_mul          |     813035 us |      13826 us
+After_matrix_add          |     813224 us |        189 us
+After_matrix_relu         |     813257 us |         32 us
+Layer_2_after_return      |     813258 us |          1 us
+Layer_2_after_move_assign |     813259 us |          0 us
+Layer_2_end               |     813259 us |          0 us
+Layer_3_start             |     813260 us |          0 us
+Before_matrix_init        |     813260 us |          0 us
+Middle_matrix_init        |     813261 us |          0 us
+After_matrix_init         |     813261 us |          0 us
+After_matrix_mul          |     813576 us |        314 us
+After_matrix_add          |     813577 us |          1 us
+After_matrix_relu         |     813577 us |          0 us
+Layer_3_after_return      |     813578 us |          0 us
+Layer_3_after_move_assign |     813578 us |          0 us
+Layer_3_end               |     813594 us |         16 us
+Batch_2_end               |     813595 us |          0 us
+Batch_3_start             |     813635 us |         40 us
+Layer_0_start             |     813636 us |          1 us
+Before_matrix_init        |     813636 us |          0 us
+Middle_matrix_init        |     813637 us |          0 us
+After_matrix_init         |     813637 us |          0 us
+After_matrix_mul          |     815350 us |       1713 us
+After_matrix_add          |     815819 us |        468 us
+After_matrix_relu         |     815878 us |         58 us
+Layer_0_after_return      |     815878 us |          0 us
+Layer_0_after_move_assign |     815878 us |          0 us
+Layer_0_end               |     815878 us |          0 us
+Layer_1_start             |     815878 us |          0 us
+Before_matrix_init        |     815879 us |          0 us
+Middle_matrix_init        |     815879 us |          0 us
+After_matrix_init         |     815879 us |          0 us
+After_matrix_mul          |     829597 us |      13718 us
+After_matrix_add          |     829829 us |        231 us
+After_matrix_relu         |     829877 us |         48 us
+Layer_1_after_return      |     829879 us |          1 us
+Layer_1_after_move_assign |     829879 us |          0 us
+Layer_1_end               |     829892 us |         13 us
+Layer_2_start             |     829893 us |          0 us
+Before_matrix_init        |     829893 us |          0 us
+Middle_matrix_init        |     829894 us |          0 us
+After_matrix_init         |     829894 us |          0 us
+After_matrix_mul          |     844618 us |      14723 us
+After_matrix_add          |     844806 us |        188 us
+After_matrix_relu         |     844838 us |         32 us
+Layer_2_after_return      |     844839 us |          0 us
+Layer_2_after_move_assign |     844840 us |          0 us
+Layer_2_end               |     844840 us |          0 us
+Layer_3_start             |     844841 us |          0 us
+Before_matrix_init        |     844842 us |          0 us
+Middle_matrix_init        |     844842 us |          0 us
+After_matrix_init         |     844842 us |          0 us
+After_matrix_mul          |     845147 us |        304 us
+After_matrix_add          |     845147 us |          0 us
+After_matrix_relu         |     845147 us |          0 us
+Layer_3_after_return      |     845148 us |          0 us
+Layer_3_after_move_assign |     845148 us |          0 us
+Layer_3_end               |     845148 us |          0 us
+Batch_3_end               |     845148 us |          0 us
+-------------------------------------------------------
+================================================================================
+  Mean latency : 37.3773 ms
+  Std dev      : 11.9345 ms
+  Throughput   : 54792.7 samples/sec
+================================================================================
+Wrote logits to: cpp_output_logits.bin
+Wrote preds  to: cpp_output_preds.bin

@@ -19,7 +19,7 @@
 #include <cmath>
 
 namespace fs = std::filesystem;
-
+// Utility functions for reading/writing binary files of float32 and int64 types
 static std::vector<float> read_float32_file(const fs::path &path)
 {
     std::ifstream file(path, std::ios::binary | std::ios::ate);
@@ -42,7 +42,7 @@ static std::vector<float> read_float32_file(const fs::path &path)
     }
     return data;
 }
-
+// Similar function for float32 files
 static void write_float32_file(const fs::path &path, const std::vector<float> &data)
 {
     std::ofstream file(path, std::ios::binary);
@@ -54,6 +54,7 @@ static void write_float32_file(const fs::path &path, const std::vector<float> &d
                static_cast<std::streamsize>(data.size() * sizeof(float)));
 }
 
+// Similar function for int64 files
 static void write_int64_file(const fs::path &path, const std::vector<std::int64_t> &data)
 {
     std::ofstream file(path, std::ios::binary);
@@ -65,25 +66,27 @@ static void write_int64_file(const fs::path &path, const std::vector<std::int64_
                static_cast<std::streamsize>(data.size() * sizeof(std::int64_t)));
 }
 
+// Configuration struct to hold command-line arguments
 struct Config
 {
     static constexpr std::string_view DEFAULT_LOGITS_OUT = "cpp_output_logits.bin";
     static constexpr std::string_view DEFAULT_PREDS_OUT = "cpp_output_preds.bin";
-    static constexpr std::size_t DEFAULT_BATCH_SIZE = 128;
+    static constexpr std::size_t DEFAULT_BATCH_SIZE = 128; // Default batch size if not specified
     static constexpr std::optional<std::size_t> MAX_NUM_BATCHES_PLACEHOLDER = std::nullopt;
 
-    std::string export_dir;
-    std::string input_path;
-    std::string logits_out{DEFAULT_LOGITS_OUT};
-    std::string preds_out{DEFAULT_PREDS_OUT};
-    std::size_t batch_size = DEFAULT_BATCH_SIZE;
-    std::optional<std::size_t> num_batches = MAX_NUM_BATCHES_PLACEHOLDER;
+    std::string export_dir; // Path to model weights and config
+    std::string input_path; // Path to input embeddings .bin file
+    std::string logits_out{DEFAULT_LOGITS_OUT}; // Path to output logits .bin file
+    std::string preds_out{DEFAULT_PREDS_OUT}; // Path to output predictions .bin file
+    std::size_t batch_size = DEFAULT_BATCH_SIZE; 
+    std::optional<std::size_t> num_batches = MAX_NUM_BATCHES_PLACEHOLDER; // Number of batches to run, if not specified, will run on all samples in the input dataset
     bool quiet = false;
 };
 
 int main(int argc, char **argv)
 {
 #ifdef USE_MPI
+    // Initialize MPI 
     MPI_Init(&argc, &argv);
     int mpi_rank = 0, mpi_size = 1;
     MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
@@ -93,6 +96,8 @@ int main(int argc, char **argv)
     constexpr int mpi_size = 1;
 #endif
 
+    // ============== Command-line argument parsing using CLI11 ==============
+    // srun is responsible to pass the command-line arguments to all ranks
     CLI::App app{"MLP Inference"};
     argv = app.ensure_utf8(argv);
 
@@ -106,12 +111,13 @@ int main(int argc, char **argv)
     app.add_flag("--quiet", cfg.quiet, "Suppress per-batch output, show only final summary");
 
     CLI11_PARSE(app, argc, argv);
-
+    // =====================================================================
     try
     {
         ProfileData profile_data{};
         profile_data.append_timestamp("Start");
-        // Load the model
+
+        // Load the model, every rank does this
         MLPModel model;
         model.load_from_export_dir(cfg.export_dir);
         profile_data.append_timestamp("Model_loaded");
@@ -133,6 +139,7 @@ int main(int argc, char **argv)
         if (mpi_rank == 0) {
             num_samples = [&]()
             {
+                // if not specified, calculate the number of batches based on the input file size and batch size
                 if (!cfg.num_batches.has_value())
                 {
                     const std::size_t total_samples = input.size() / model.input_dim();
@@ -144,12 +151,13 @@ int main(int argc, char **argv)
         }
 #ifdef USE_MPI
         {
+            // Broadcast num_samples to all ranks
             std::size_t nb = cfg.num_batches.value_or(0);
             MPI_Bcast(&nb, 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
             cfg.num_batches = nb;
         }
 #endif
-
+        // Rank 0 prints the configuration summary
         if (mpi_rank == 0) {
             std::cout << "================================================================================\n";
             std::cout << "  Input dim    : " << model.input_dim() << "\n";
@@ -158,6 +166,7 @@ int main(int argc, char **argv)
             std::cout << "  Total samples: " << num_samples << "\n";
             std::cout << "  Total batches: " << cfg.num_batches.value() << "\n";
 #ifdef USE_MPI
+
             std::cout << "  MPI ranks    : " << mpi_size << "\n";
             std::cout << "  Batches/rank : " << cfg.num_batches.value() / mpi_size << "\n";
 #endif
@@ -173,10 +182,16 @@ int main(int argc, char **argv)
 #ifdef USE_MPI
         // Scatter input data to all ranks
         const int batches_per_process = static_cast<int>(cfg.num_batches.value()) / mpi_size;
+
+        // stride = batch_size * input_dim , such as 64*512 = 32768 floats per batch
         std::vector<float> local_input(static_cast<std::size_t>(batches_per_process) * stride);
         MPI_Scatter(
-            input.data(), static_cast<int>(batches_per_process * stride), MPI_FLOAT,
-            local_input.data(), static_cast<int>(batches_per_process * stride), MPI_FLOAT,
+            input.data(),
+            static_cast<int>(batches_per_process * stride),
+            MPI_FLOAT,
+            local_input.data(),
+            static_cast<int>(batches_per_process * stride),
+            MPI_FLOAT,
             0, MPI_COMM_WORLD);
 #else
         const int batches_per_process = static_cast<int>(cfg.num_batches.value());
@@ -191,14 +206,17 @@ int main(int argc, char **argv)
 
         // Iterate over batches and run inference
         for (std::size_t i = 0; i < static_cast<std::size_t>(batches_per_process); ++i) {
-            // Create batch input
+            // Create batch input, zero-copy by pointing to the correct offset in the local_input vector
             const float* batch_start = local_input.data() + i * stride;
             const std::vector<float, FreeListAllocator<float>> batch_input(batch_start, batch_start + stride, FreeListAllocator<float>{mem_pool});
 
             // Calculate the time for each batch inference
             const auto t_start = std::chrono::system_clock::now();
             profile_data.append_timestamp("Batch_" + std::to_string(i) + "_start", t_start);
+
+            // Run inference for the batch and get logits, then predict classes from logits
             const std::vector<float, FreeListAllocator<float>> logits = model.infer_batch(batch_input, cfg.batch_size, mem_pool, profile_data);
+            
             const auto t_end = std::chrono::system_clock::now();
             profile_data.append_timestamp("Batch_" + std::to_string(i) + "_end", t_end);
 
@@ -212,9 +230,10 @@ int main(int argc, char **argv)
         }
 
 #ifdef USE_MPI
-        // Gather batch times, logits, and preds from all ranks to rank 0
+        // Gather batch times, logits, and preds from all ranks to RANK 0!!!
         const int total_batches = static_cast<int>(cfg.num_batches.value());
         std::vector<double> gathered_batch_times(mpi_rank == 0 ? total_batches : 0);
+        // Gather batch times
         MPI_Gather(batch_times.data(), batches_per_process, MPI_DOUBLE,
                    gathered_batch_times.data(), batches_per_process, MPI_DOUBLE,
                    0, MPI_COMM_WORLD);
@@ -223,9 +242,11 @@ int main(int argc, char **argv)
         const int preds_per_rank  = batches_per_process * static_cast<int>(cfg.batch_size);
         std::vector<float> gathered_logits(mpi_rank == 0 ? static_cast<std::size_t>(mpi_size) * logits_per_rank : 0);
         std::vector<std::int64_t> gathered_preds(mpi_rank == 0 ? static_cast<std::size_t>(mpi_size) * preds_per_rank : 0);
+        // Gather logits and preds
         MPI_Gather(all_logits.data(), logits_per_rank, MPI_FLOAT,
                    gathered_logits.data(), logits_per_rank, MPI_FLOAT,
                    0, MPI_COMM_WORLD);
+        // Gather predicted class ids
         MPI_Gather(all_preds.data(), preds_per_rank, MPI_INT64_T,
                    gathered_preds.data(), preds_per_rank, MPI_INT64_T,
                    0, MPI_COMM_WORLD);
