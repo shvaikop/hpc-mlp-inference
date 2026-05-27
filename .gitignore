@@ -29,3 +29,4 @@ build/
 
 # Ignore Claude's files
 CLAUDE.*
+*.out

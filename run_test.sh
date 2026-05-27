@@ -2,10 +2,10 @@
 #SBATCH -A edu26.dd2356
 #SBATCH -J mlp_strong_scaling
 #SBATCH -p main
-#SBATCH -N 2                    # 改这里: 1, 2, 4, 8
+#SBATCH -N 128                    # 改这里: 1, 2, 4, 8
 #SBATCH --ntasks-per-node=1     # 每节点 1 个 MPI rank
-#SBATCH --cpus-per-task=128     # 每 rank 用满整个节点 (128核)
-#SBATCH -t 00:10:00
+#SBATCH --cpus-per-task=64     # 每 rank 用满整个节点 (128核)
+#SBATCH -t 00:01:00
 
 export OMP_NUM_THREADS=128
 export OMP_PLACES=cores
