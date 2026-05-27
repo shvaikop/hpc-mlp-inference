@@ -12,7 +12,7 @@
 # 32 ranks x 1 thread = 32 cores
 # 64 ranks x 1 thread = 64 cores
 
-TOTAL_BATCHES=640
+TOTAL_BATCHES=64
 BATCH_SIZE=128
 OMP=2
 EXPORT_DIR=cifar10_embedding_mlp/export
