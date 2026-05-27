@@ -10,7 +10,7 @@
 
 BATCHES_PER_RANK=8
 BATCH_SIZE=128
-OMP=8
+OMP=2
 EXPORT_DIR=cifar10_embedding_mlp/export
 INPUT=cifar10_embedding_mlp/export/test_input_embeddings_all.bin
 OUTDIR=benchmark_CPU_Weak

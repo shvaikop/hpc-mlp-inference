@@ -1,19 +1,20 @@
 #!/bin/bash
 # Strong scaling on a single node (no SLURM)
 # Intel Xeon Platinum 8480C: 112 physical cores
-# Strategy: keep total cores = 64, split between MPI ranks and OMP threads
+# Strategy: pure MPI (OMP=2), increase rank count = increase total cores used
 #
-# ranks x omp_threads = 64 (constant)
-# 1  rank  x 64 threads
-# 2  ranks x 32 threads
-# 4  ranks x 16 threads
-# 8  ranks x  8 threads
-# 16 ranks x  4 threads
-# 32 ranks x  2 threads
-# 64 ranks x  1 thread
+# ranks x omp_threads
+#  1 rank  x 1 thread =  1 core
+#  2 ranks x 1 thread =  2 cores
+#  4 ranks x 1 thread =  4 cores
+#  8 ranks x 1 thread =  8 cores
+# 16 ranks x 1 thread = 16 cores
+# 32 ranks x 1 thread = 32 cores
+# 64 ranks x 1 thread = 64 cores
 
 TOTAL_BATCHES=640
 BATCH_SIZE=128
+OMP=2
 EXPORT_DIR=cifar10_embedding_mlp/export
 INPUT=cifar10_embedding_mlp/export/test_input_embeddings_all.bin
 OUTDIR=benchmark_CPU_Strong
@@ -21,9 +22,7 @@ OUTDIR=benchmark_CPU_Strong
 mkdir -p $OUTDIR
 
 for RANKS in 1 2 4 8 16 32 64; do
-    OMP=$((64 / RANKS))
-    if [ $OMP -lt 1 ]; then OMP=1; fi
-    echo "Running: $RANKS ranks x $OMP OMP threads..."
+    echo "Running: $RANKS ranks x $OMP OMP thread..."
 
     OMP_NUM_THREADS=$OMP \
     OMP_PLACES=cores \
