@@ -5,6 +5,10 @@
 #include "FreeListMemoryPool.hpp"
 #include "FreeListAllocator.hpp"
 
+#ifdef USE_MPI
+#include <mpi.h>
+#endif
+
 #include <optional>
 #include <algorithm>
 #include <iostream>
@@ -79,6 +83,16 @@ struct Config
 
 int main(int argc, char **argv)
 {
+#ifdef USE_MPI
+    MPI_Init(&argc, &argv);
+    int mpi_rank = 0, mpi_size = 1;
+    MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+#else
+    constexpr int mpi_rank = 0;
+    constexpr int mpi_size = 1;
+#endif
+
     CLI::App app{"MLP Inference"};
     argv = app.ensure_utf8(argv);
 
@@ -102,41 +116,72 @@ int main(int argc, char **argv)
         model.load_from_export_dir(cfg.export_dir);
         profile_data.append_timestamp("Model_loaded");
 
-        // Load the input embeddings
-        std::vector<float> input = read_float32_file(cfg.input_path);
-        if (input.size() % model.input_dim() != 0)
-        {
-            throw std::runtime_error(
-                "Input file size is not divisible by input_dim=" + std::to_string(model.input_dim()));
+        // Load the input embeddings (only rank 0 reads from disk)
+        std::vector<float> input;
+        if (mpi_rank == 0) {
+            input = read_float32_file(cfg.input_path);
+            if (input.size() % model.input_dim() != 0)
+            {
+                throw std::runtime_error(
+                    "Input file size is not divisible by input_dim=" + std::to_string(model.input_dim()));
+            }
         }
         profile_data.append_timestamp("Input_loaded");
 
-        // Calculate the number of samples and batch
-        // Lambda is used so that `num_samples` can be marked const and its more readable than with ternary operator
-        const std::size_t num_samples = [&]()
-        {
-            if (!cfg.num_batches.has_value())
+        // Calculate the number of samples and batch (rank 0 only, then broadcast)
+        std::size_t num_samples = 0;
+        if (mpi_rank == 0) {
+            num_samples = [&]()
             {
-                const std::size_t total_samples = input.size() / model.input_dim();
-                cfg.num_batches = total_samples / cfg.batch_size;
-                return total_samples;
-            }
-            return cfg.num_batches.value() * cfg.batch_size;
-        }();
+                if (!cfg.num_batches.has_value())
+                {
+                    const std::size_t total_samples = input.size() / model.input_dim();
+                    cfg.num_batches = total_samples / cfg.batch_size;
+                    return total_samples;
+                }
+                return cfg.num_batches.value() * cfg.batch_size;
+            }();
+        }
+#ifdef USE_MPI
+        {
+            std::size_t nb = cfg.num_batches.value_or(0);
+            MPI_Bcast(&nb, 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
+            cfg.num_batches = nb;
+        }
+#endif
 
-        std::cout << "================================================================================\n";
-        std::cout << "  Input dim    : " << model.input_dim() << "\n";
-        std::cout << "  Num classes  : " << model.num_classes() << "\n";
-        std::cout << "  Batch size   : " << cfg.batch_size << "\n";
-        std::cout << "  Total samples: " << num_samples << "\n";
-        std::cout << "  Total batches: " << cfg.num_batches.value() << "\n";
-        std::cout << "================================================================================\n";
+        if (mpi_rank == 0) {
+            std::cout << "================================================================================\n";
+            std::cout << "  Input dim    : " << model.input_dim() << "\n";
+            std::cout << "  Num classes  : " << model.num_classes() << "\n";
+            std::cout << "  Batch size   : " << cfg.batch_size << "\n";
+            std::cout << "  Total samples: " << num_samples << "\n";
+            std::cout << "  Total batches: " << cfg.num_batches.value() << "\n";
+#ifdef USE_MPI
+            std::cout << "  MPI ranks    : " << mpi_size << "\n";
+            std::cout << "  Batches/rank : " << cfg.num_batches.value() / mpi_size << "\n";
+#endif
+            std::cout << "================================================================================\n";
+        }
 
         std::vector<double> batch_times;
         const std::size_t stride = cfg.batch_size * model.input_dim();
 
         std::vector<float> all_logits;
         std::vector<std::int64_t> all_preds;
+
+#ifdef USE_MPI
+        // Scatter input data to all ranks
+        const int batches_per_process = static_cast<int>(cfg.num_batches.value()) / mpi_size;
+        std::vector<float> local_input(static_cast<std::size_t>(batches_per_process) * stride);
+        MPI_Scatter(
+            input.data(), static_cast<int>(batches_per_process * stride), MPI_FLOAT,
+            local_input.data(), static_cast<int>(batches_per_process * stride), MPI_FLOAT,
+            0, MPI_COMM_WORLD);
+#else
+        const int batches_per_process = static_cast<int>(cfg.num_batches.value());
+        const std::vector<float>& local_input = input;
+#endif
 
         profile_data.append_timestamp("Before_mem_pool_init");
         FreeListMemoryPool mem_pool{
@@ -145,16 +190,16 @@ int main(int argc, char **argv)
         profile_data.append_timestamp("After_mem_pool_init");
 
         // Iterate over batches and run inference
-        for (std::size_t i = 0; i < cfg.num_batches.value(); ++i) {
-            // Create batch input                                                   
-            const float* batch_start = input.data() + i * stride;                         
+        for (std::size_t i = 0; i < static_cast<std::size_t>(batches_per_process); ++i) {
+            // Create batch input
+            const float* batch_start = local_input.data() + i * stride;
             const std::vector<float, FreeListAllocator<float>> batch_input(batch_start, batch_start + stride, FreeListAllocator<float>{mem_pool});
-                                                                                            
+
             // Calculate the time for each batch inference
-            const auto t_start = std::chrono::high_resolution_clock::now();
+            const auto t_start = std::chrono::system_clock::now();
             profile_data.append_timestamp("Batch_" + std::to_string(i) + "_start", t_start);
             const std::vector<float, FreeListAllocator<float>> logits = model.infer_batch(batch_input, cfg.batch_size, mem_pool, profile_data);
-            const auto t_end = std::chrono::high_resolution_clock::now();
+            const auto t_end = std::chrono::system_clock::now();
             profile_data.append_timestamp("Batch_" + std::to_string(i) + "_end", t_end);
 
             batch_times.push_back(std::chrono::duration<double, std::milli>(t_end - t_start).count());
@@ -163,59 +208,99 @@ int main(int argc, char **argv)
             all_logits.insert(all_logits.end(), logits.begin(), logits.end());
             all_preds.insert(all_preds.end(), preds.begin(), preds.end());
             if (!cfg.quiet)
-                std::cout << "Processed batch " << (i + 1) << "/" << cfg.num_batches.value() << " in " << batch_times.back() << " ms\n";
+                std::cout << "Processed batch " << (i + 1) << "/" << batches_per_process << " in " << batch_times.back() << " ms\n";
         }
 
-        // average latency
-        const double mean_ms = std::accumulate(batch_times.begin(), batch_times.end(), 0.0) / cfg.num_batches.value();
+#ifdef USE_MPI
+        // Gather batch times, logits, and preds from all ranks to rank 0
+        const int total_batches = static_cast<int>(cfg.num_batches.value());
+        std::vector<double> gathered_batch_times(mpi_rank == 0 ? total_batches : 0);
+        MPI_Gather(batch_times.data(), batches_per_process, MPI_DOUBLE,
+                   gathered_batch_times.data(), batches_per_process, MPI_DOUBLE,
+                   0, MPI_COMM_WORLD);
 
-        // standard deviation
-        double variance = 0.0;
-        for (const double t : batch_times)
-        {
-            variance += (t - mean_ms) * (t - mean_ms);
-        }
-        const double std_ms = std::sqrt(variance / cfg.num_batches.value());
+        const int logits_per_rank = batches_per_process * static_cast<int>(cfg.batch_size) * static_cast<int>(model.num_classes());
+        const int preds_per_rank  = batches_per_process * static_cast<int>(cfg.batch_size);
+        std::vector<float> gathered_logits(mpi_rank == 0 ? static_cast<std::size_t>(mpi_size) * logits_per_rank : 0);
+        std::vector<std::int64_t> gathered_preds(mpi_rank == 0 ? static_cast<std::size_t>(mpi_size) * preds_per_rank : 0);
+        MPI_Gather(all_logits.data(), logits_per_rank, MPI_FLOAT,
+                   gathered_logits.data(), logits_per_rank, MPI_FLOAT,
+                   0, MPI_COMM_WORLD);
+        MPI_Gather(all_preds.data(), preds_per_rank, MPI_INT64_T,
+                   gathered_preds.data(), preds_per_rank, MPI_INT64_T,
+                   0, MPI_COMM_WORLD);
+#else
+        const int total_batches = batches_per_process;
+        const std::vector<double>& gathered_batch_times = batch_times;
+        const std::vector<float>& gathered_logits = all_logits;
+        const std::vector<std::int64_t>& gathered_preds = all_preds;
+#endif
 
-        const double throughput = cfg.batch_size / (mean_ms / 1000.0);
+        if (mpi_rank == 0) {
+            // average latency
+            const double mean_ms = std::accumulate(gathered_batch_times.begin(), gathered_batch_times.end(), 0.0) / total_batches;
 
-        std::cout << "================================================================================\n";
-        std::cout << "  Benchmark Results\n";
-        std::cout << "================================================================================\n";
-        std::cout << "  Mean latency : " << mean_ms << " ms\n";
-        std::cout << "  Std dev      : " << std_ms << " ms\n";
-        std::cout << "  Throughput   : " << throughput << " samples/sec\n";
-        std::cout << "================================================================================\n";
-
-        // write results to files
-        write_float32_file(cfg.logits_out, all_logits);
-        write_int64_file(cfg.preds_out, all_preds);
-
-        std::cout << "Wrote logits to: " << cfg.logits_out << "\n";
-        std::cout << "Wrote preds  to: " << cfg.preds_out << "\n";
-
-        profile_data.print_timestamps();
-
-        if (!cfg.quiet) {
-            const auto &class_names = model.class_names();
-            std::cout << "\nFirst 10 predictions:\n";
-            for (std::size_t i = 0; i < std::min<std::size_t>(25, all_preds.size()); ++i)
+            // standard deviation
+            double variance = 0.0;
+            for (const double t : gathered_batch_times)
             {
-                const auto cls = static_cast<std::size_t>(all_preds[i]);
-                std::cout << "  sample " << i << ": class_id=" << all_preds[i];
-                if (cls < class_names.size())
+                variance += (t - mean_ms) * (t - mean_ms);
+            }
+            const double std_ms = std::sqrt(variance / total_batches);
+
+#ifdef USE_MPI
+            // Throughput = all ranks process in parallel, wall time = mean latency per batch
+            const double throughput = static_cast<double>(mpi_size * cfg.batch_size) / (mean_ms / 1000.0);
+#else
+            const double throughput = cfg.batch_size / (mean_ms / 1000.0);
+#endif
+
+            std::cout << "================================================================================\n";
+#ifdef USE_MPI
+            std::cout << "  Benchmark Results (MPI, " << mpi_size << " ranks)\n";
+#else
+            std::cout << "  Benchmark Results\n";
+#endif
+            profile_data.print_timestamps();
+            std::cout << "================================================================================\n";
+            std::cout << "  Mean latency : " << mean_ms << " ms\n";
+            std::cout << "  Std dev      : " << std_ms << " ms\n";
+            std::cout << "  Throughput   : " << throughput << " samples/sec\n";
+            std::cout << "================================================================================\n";
+
+            // write results to files
+            write_float32_file(cfg.logits_out, gathered_logits);
+            write_int64_file(cfg.preds_out, gathered_preds);
+
+            std::cout << "Wrote logits to: " << cfg.logits_out << "\n";
+            std::cout << "Wrote preds  to: " << cfg.preds_out << "\n";
+            if (!cfg.quiet) {
+                const auto &class_names = model.class_names();
+                std::cout << "\nFirst 10 predictions:\n";
+                for (std::size_t i = 0; i < std::min<std::size_t>(25, gathered_preds.size()); ++i)
                 {
-                    std::cout << " (" << class_names[cls] << ")";
+                    const auto cls = static_cast<std::size_t>(gathered_preds[i]);
+                    std::cout << "  sample " << i << ": class_id=" << gathered_preds[i];
+                    if (cls < class_names.size())
+                    {
+                        std::cout << " (" << class_names[cls] << ")";
+                    }
+                    std::cout << "\n";
                 }
-                std::cout << "\n";
             }
         }
 
+#ifdef USE_MPI
+        MPI_Finalize();
+#endif
         return 0;
     }
     catch (const std::exception &ex)
     {
         std::cerr << "ERROR: " << ex.what() << "\n";
+#ifdef USE_MPI
+        MPI_Abort(MPI_COMM_WORLD, 1);
+#endif
         return 1;
     }
 }

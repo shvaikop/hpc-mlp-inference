@@ -238,5 +238,53 @@ if(OpenMP_CXX_FOUND)
     target_link_libraries(matrix_algorithms_tests_7_avx_dot4_openmp_tiled PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
+# --- MPI target ---
+find_package(MPI)
+if(MPI_CXX_FOUND)
+    message(STATUS "MPI found: ${MPI_CXX_COMPILER}")
+    add_executable(mlp_infer_mpi ${MLP_SOURCES})
+    target_compile_options(mlp_infer_mpi PRIVATE ${FLAGS_AVX2_MAX})
+    target_compile_definitions(mlp_infer_mpi PRIVATE
+            FLATMATRIX_USE_DOT4=1
+            ALLOC_DISABLE_INIT=1
+            FLATMATRIX_USE_TILED_OMP=1
+            USE_MPI=1
+    )
+    target_link_libraries(mlp_infer_mpi PRIVATE MPI::MPI_CXX)
+    if(OpenMP_CXX_FOUND)
+        target_link_libraries(mlp_infer_mpi PRIVATE OpenMP::OpenMP_CXX)
+    endif()
+else()
+    message(STATUS "MPI not found, skipping mlp_infer_mpi target")
+endif()
+
 # Tell the compiler where to find your header files
 target_include_directories(mlp_infer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+# --- CUDA target ---
+find_package(CUDAToolkit)
+if(CUDAToolkit_FOUND)
+    message(STATUS "CUDA found: ${CUDAToolkit_VERSION}")
+    enable_language(CUDA)
+    add_executable(mlp_infer_cuda
+        src/main_cuda.cpp
+        src/cuda_backend.cu
+    )
+    set_target_properties(mlp_infer_cuda PROPERTIES
+        CUDA_ARCHITECTURES "90"
+        CUDA_STANDARD 17
+        CXX_STANDARD 17
+    )
+    set(CUBLAS_INCLUDE "/opt/conda/lib/python3.11/site-packages/nvidia/cublas/include")
+    set(CUBLAS_LIB_DIR "/opt/conda/lib/python3.11/site-packages/nvidia/cublas/lib")
+    target_include_directories(mlp_infer_cuda PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CUBLAS_INCLUDE}
+        ${CUDAToolkit_INCLUDE_DIRS}
+    )
+    target_link_libraries(mlp_infer_cuda PRIVATE
+        ${CUBLAS_LIB_DIR}/libcublas.so.12
+    )
+else()
+    message(STATUS "CUDA not found, skipping mlp_infer_cuda target")
+endif()
