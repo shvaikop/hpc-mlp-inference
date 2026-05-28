@@ -55,6 +55,9 @@ add_executable(mlp_infer ${MLP_SOURCES})
 add_executable(mlp_infer_no_opt ${MLP_SOURCES})
 target_compile_options(mlp_infer_no_opt PRIVATE ${FLAGS_NO_VEC})
 
+add_executable(mlp_infer_native ${MLP_SOURCES})
+target_compile_options(mlp_infer_native PRIVATE ${FLAGS_NATIVE})
+
 # --- 3. The "Ceiling": AVX2 Max ---
 # This uses everything the compiler has: native tuning and OpenMP SIMD hints.
 add_executable(mlp_infer_avx2_max ${MLP_SOURCES})
@@ -66,21 +69,25 @@ target_compile_definitions(mlp_infer_avx2_max PRIVATE
 
 # --- 4. AVX2 optimized version with custom memory allocator
 add_executable(mlp_infer_custom_alloc ${MLP_SOURCES})
-target_compile_options(mlp_infer_custom_alloc PRIVATE
-        -O3
-        -mavx2
-        -mfma
-        -ffast-math
-)
+target_compile_options(mlp_infer_custom_alloc PRIVATE ${FLAGS_AVX2_MAX})
 # We enable the DOT4 unrolled logic for the MAX version
 target_compile_definitions(mlp_infer_custom_alloc PRIVATE
         FLATMATRIX_USE_DOT4=1
         ALLOC_DISABLE_INIT=1
 )
 
+add_executable(mlp_infer_custom_alloc_no_opt ${MLP_SOURCES})
+target_compile_options(mlp_infer_custom_alloc_no_opt PRIVATE ${FLAGS_NO_VEC})
+# We enable the DOT4 unrolled logic for the MAX version
+target_compile_definitions(mlp_infer_custom_alloc_no_opt PRIVATE
+        ALLOC_DISABLE_INIT=1
+)
+
 
 
 set(FLAT_MATRIX_BENCHMARK_SOURCE src/flat_matrix_benchmark.cpp)
+
+set(MATRIX_ALGORITHMS_TESTS_SOURCE src/matrix_algorithms_tests.cpp)
 
 # --- STEP 0: Pure Scalar (The Baseline) ---
 # No vectorization, no hardware tricks. Just standard math logic.
@@ -126,6 +133,58 @@ add_executable(flat_matrix_benchmark_5_avx2_dot4 ${FLAT_MATRIX_BENCHMARK_SOURCE}
 target_compile_options(flat_matrix_benchmark_5_avx2_dot4 PRIVATE ${FLAGS_AVX2_MAX})
 target_compile_definitions(flat_matrix_benchmark_5_avx2_dot4 PRIVATE FLATMATRIX_USE_DOT4=1)
 
+add_executable(flat_matrix_benchmark_5_avx2_kernel_2_4 ${FLAT_MATRIX_BENCHMARK_SOURCE})
+target_compile_options(flat_matrix_benchmark_5_avx2_kernel_2_4 PRIVATE ${FLAGS_AVX2_MAX})
+target_compile_definitions(flat_matrix_benchmark_5_avx2_kernel_2_4 PRIVATE FLATMATRIX_USE_KERNEL_2_4=1)
+
+add_executable(flat_matrix_benchmark_5_avx2_kernel_3_4 ${FLAT_MATRIX_BENCHMARK_SOURCE})
+target_compile_options(flat_matrix_benchmark_5_avx2_kernel_3_4 PRIVATE ${FLAGS_AVX2_MAX})
+target_compile_definitions(flat_matrix_benchmark_5_avx2_kernel_3_4 PRIVATE FLATMATRIX_USE_KERNEL_3_4=1)
+
+add_executable(flat_matrix_benchmark_5_avx2_kernel_6_4 ${FLAT_MATRIX_BENCHMARK_SOURCE})
+target_compile_options(flat_matrix_benchmark_5_avx2_kernel_6_4 PRIVATE ${FLAGS_AVX2_MAX})
+target_compile_definitions(flat_matrix_benchmark_5_avx2_kernel_6_4 PRIVATE FLATMATRIX_USE_KERNEL_6_4=1)
+
+
+# --- STEP 1: Scalar + Fast Math ---
+# Still no vectorization, but we allow the compiler to reorder math for better pipelining.
+add_executable(matrix_algorithms_tests_1_fast_math ${MATRIX_ALGORITHMS_TESTS_SOURCE})
+target_compile_options(matrix_algorithms_tests_1_fast_math PRIVATE
+        -O3 -fno-tree-vectorize -ffast-math)
+
+# --- STEP 2: Auto-Vectorization (Generic x86-64) ---
+# We let the compiler use SIMD, but only standard SSE (128-bit) that works on any 64-bit PC.
+add_executable(matrix_algorithms_tests_2_auto_vec ${MATRIX_ALGORITHMS_TESTS_SOURCE})
+target_compile_options(matrix_algorithms_tests_2_auto_vec PRIVATE
+        -O3)
+
+# --- STEP 3: AVX2 + FMA (The Modern Standard) ---
+# Moving to 256-bit wide registers and fused multiply-add.
+add_executable(matrix_algorithms_tests_3_avx2_fma ${MATRIX_ALGORITHMS_TESTS_SOURCE})
+target_compile_options(matrix_algorithms_tests_3_avx2_fma PRIVATE ${FLAGS_AVX2_MAX})
+
+# --- STEP 4: Native Tuning ---
+# Let the compiler use every specific trick your CPU has (like avx_vnni).
+add_executable(matrix_algorithms_tests_4_native ${MATRIX_ALGORITHMS_TESTS_SOURCE})
+target_compile_options(matrix_algorithms_tests_4_native PRIVATE ${FLAGS_NATIVE})
+
+# --- STEP 5: Explicit code so that compiler can vectorize as much as possible ---
+add_executable(matrix_algorithms_tests_5_avx2_dot4 ${MATRIX_ALGORITHMS_TESTS_SOURCE})
+target_compile_options(matrix_algorithms_tests_5_avx2_dot4 PRIVATE ${FLAGS_AVX2_MAX})
+target_compile_definitions(matrix_algorithms_tests_5_avx2_dot4 PRIVATE FLATMATRIX_USE_DOT4=1)
+
+add_executable(matrix_algorithms_tests_5_avx2_kernel_2_4 ${MATRIX_ALGORITHMS_TESTS_SOURCE})
+target_compile_options(matrix_algorithms_tests_5_avx2_kernel_2_4 PRIVATE ${FLAGS_AVX2_MAX})
+target_compile_definitions(matrix_algorithms_tests_5_avx2_kernel_2_4 PRIVATE FLATMATRIX_USE_KERNEL_2_4=1)
+
+add_executable(matrix_algorithms_tests_5_avx2_kernel_3_4 ${MATRIX_ALGORITHMS_TESTS_SOURCE})
+target_compile_options(matrix_algorithms_tests_5_avx2_kernel_3_4 PRIVATE ${FLAGS_AVX2_MAX})
+target_compile_definitions(matrix_algorithms_tests_5_avx2_kernel_3_4 PRIVATE FLATMATRIX_USE_KERNEL_3_4=1)
+
+add_executable(matrix_algorithms_tests_5_avx2_kernel_6_4 ${MATRIX_ALGORITHMS_TESTS_SOURCE})
+target_compile_options(matrix_algorithms_tests_5_avx2_kernel_6_4 PRIVATE ${FLAGS_AVX2_MAX})
+target_compile_definitions(matrix_algorithms_tests_5_avx2_kernel_6_4 PRIVATE FLATMATRIX_USE_KERNEL_6_4=1)
+
 # --- OpenMP executables ---
 find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
@@ -160,6 +219,23 @@ if(OpenMP_CXX_FOUND)
             FLATMATRIX_USE_TILED_OMP=1
     )
     target_link_libraries(flat_matrix_benchmark_7_avx_dot4_openmp_tiled PRIVATE OpenMP::OpenMP_CXX)
+
+    add_executable(matrix_algorithms_tests_6_avx_dot4_openmp ${MATRIX_ALGORITHMS_TESTS_SOURCE})
+    target_compile_options(matrix_algorithms_tests_6_avx_dot4_openmp PRIVATE ${FLAGS_AVX2_MAX})
+    target_compile_definitions(matrix_algorithms_tests_6_avx_dot4_openmp PRIVATE
+            FLATMATRIX_USE_DOT4=1
+            ALLOC_DISABLE_INIT=1
+    )
+    target_link_libraries(matrix_algorithms_tests_6_avx_dot4_openmp PRIVATE OpenMP::OpenMP_CXX)
+
+    add_executable(matrix_algorithms_tests_7_avx_dot4_openmp_tiled ${MATRIX_ALGORITHMS_TESTS_SOURCE})
+    target_compile_options(matrix_algorithms_tests_7_avx_dot4_openmp_tiled PRIVATE ${FLAGS_AVX2_MAX})
+    target_compile_definitions(matrix_algorithms_tests_7_avx_dot4_openmp_tiled PRIVATE
+            FLATMATRIX_USE_DOT4=1
+            ALLOC_DISABLE_INIT=1
+            FLATMATRIX_USE_TILED_OMP=1
+    )
+    target_link_libraries(matrix_algorithms_tests_7_avx_dot4_openmp_tiled PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
 # Tell the compiler where to find your header files
